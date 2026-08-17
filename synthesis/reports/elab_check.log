@@ -1,0 +1,332 @@
+
+ /----------------------------------------------------------------------------\
+ |                                                                            |
+ |  yosys -- Yosys Open SYnthesis Suite                                       |
+ |                                                                            |
+ |  Copyright (C) 2012 - 2020  Claire Xenia Wolf <claire@yosyshq.com>         |
+ |                                                                            |
+ |  Permission to use, copy, modify, and/or distribute this software for any  |
+ |  purpose with or without fee is hereby granted, provided that the above    |
+ |  copyright notice and this permission notice appear in all copies.         |
+ |                                                                            |
+ |  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES  |
+ |  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF          |
+ |  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR   |
+ |  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES    |
+ |  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN     |
+ |  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF   |
+ |  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.            |
+ |                                                                            |
+ \----------------------------------------------------------------------------/
+
+ Yosys 0.33 (git sha1 2584903a060)
+
+
+-- Executing script file `/home/abhi/Documents/VLSI/Projects/axis_fir_accel/synthesis/scripts/elab_check.ys' --
+
+1. Executing Verilog-2005 frontend: rtl/common/fir_pkg.sv
+Parsing SystemVerilog input from `rtl/common/fir_pkg.sv' to AST representation.
+Successfully finished Verilog frontend.
+
+2. Executing Verilog-2005 frontend: rtl/common/reset_sync.sv
+Parsing SystemVerilog input from `rtl/common/reset_sync.sv' to AST representation.
+Generating RTLIL representation for module `\reset_sync'.
+Successfully finished Verilog frontend.
+
+3. Executing Verilog-2005 frontend: rtl/axi_lite/axil_slave.sv
+Parsing SystemVerilog input from `rtl/axi_lite/axil_slave.sv' to AST representation.
+Generating RTLIL representation for module `\axil_slave'.
+Successfully finished Verilog frontend.
+
+4. Executing Verilog-2005 frontend: rtl/control/csr_regfile.sv
+Parsing SystemVerilog input from `rtl/control/csr_regfile.sv' to AST representation.
+Generating RTLIL representation for module `\csr_regfile'.
+Successfully finished Verilog frontend.
+
+5. Executing HIERARCHY pass (managing design hierarchy).
+
+6. Executing PROC pass (convert processes to netlists).
+
+6.1. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+Found and cleaned up 4 empty switches in `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$139'.
+Removing empty process `csr_regfile.$proc$rtl/control/csr_regfile.sv:0$139'.
+Found and cleaned up 1 empty switch in `\reset_sync.$proc$rtl/common/reset_sync.sv:0$3'.
+Removing empty process `reset_sync.$proc$rtl/common/reset_sync.sv:0$3'.
+Cleaned up 5 empty switches.
+
+6.2. Executing PROC_RMDEAD pass (remove dead branches from decision trees).
+Marked 3 switch rules as full_case in process $proc$rtl/control/csr_regfile.sv:0$89 in module csr_regfile.
+Marked 2 switch rules as full_case in process $proc$rtl/control/csr_regfile.sv:309$70 in module csr_regfile.
+Marked 1 switch rules as full_case in process $proc$rtl/control/csr_regfile.sv:0$52 in module csr_regfile.
+Marked 2 switch rules as full_case in process $proc$rtl/control/csr_regfile.sv:0$51 in module csr_regfile.
+Marked 2 switch rules as full_case in process $proc$rtl/axi_lite/axil_slave.sv:172$24 in module axil_slave.
+Marked 2 switch rules as full_case in process $proc$rtl/axi_lite/axil_slave.sv:114$18 in module axil_slave.
+Marked 1 switch rules as full_case in process $proc$rtl/common/reset_sync.sv:41$1 in module reset_sync.
+Removed a total of 0 dead cases.
+
+6.3. Executing PROC_PRUNE pass (remove redundant assignments in processes).
+Removed 5 redundant assignments.
+Promoted 60 assignments to connections.
+
+6.4. Executing PROC_INIT pass (extract init attributes).
+
+6.5. Executing PROC_ARST pass (detect async resets in processes).
+Found async reset \rst_n in `\csr_regfile.$proc$rtl/control/csr_regfile.sv:309$70'.
+Found async reset \rst_n in `\axil_slave.$proc$rtl/axi_lite/axil_slave.sv:172$24'.
+Found async reset \rst_n in `\axil_slave.$proc$rtl/axi_lite/axil_slave.sv:114$18'.
+Found async reset \arst_n in `\reset_sync.$proc$rtl/common/reset_sync.sv:41$1'.
+
+6.6. Executing PROC_ROM pass (convert switches to ROMs).
+Converted 0 switches.
+<suppressed ~25 debug messages>
+
+6.7. Executing PROC_MUX pass (convert decision trees to multiplexers).
+Creating decoders for process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$128'.
+Creating decoders for process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$116'.
+Creating decoders for process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$104'.
+Creating decoders for process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$92'.
+Creating decoders for process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$89'.
+     1/5: $3\reg_rdata[31:0]
+     2/5: $2\reg_rerr[0:0]
+     3/5: $2\reg_rdata[31:0]
+     4/5: $1\reg_rdata[31:0]
+     5/5: $1\reg_rerr[0:0]
+Creating decoders for process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:309$70'.
+     1/17: $0\irq_status_q[2:0] [2]
+     2/17: $0\irq_status_q[2:0] [1]
+     3/17: $0\irq_status_q[2:0] [0]
+     4/17: $0\cmd_flush_q[0:0]
+     5/17: $0\cmd_commit_q[0:0]
+     6/17: $0\cmd_soft_reset_q[0:0]
+     7/17: $0\frame_cnt_q[31:0]
+     8/17: $0\sample_cnt_q[31:0]
+     9/17: $0\cfg_err_sticky_q[0:0]
+    10/17: $0\sat_sticky_q[0:0]
+    11/17: $0\irq_enable_q[2:0]
+    12/17: $0\cmd_cnt_clr_q[0:0]
+    13/17: $0\cfg_sym_q[0:0]
+    14/17: $0\cfg_sat_q[0:0]
+    15/17: $0\cfg_round_q[1:0]
+    16/17: $0\cfg_ntaps_q[8:0]
+    17/17: $0\ctrl_enable_q[0:0]
+Creating decoders for process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$55'.
+Creating decoders for process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$54'.
+Creating decoders for process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$53'.
+Creating decoders for process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$52'.
+     1/1: $1\w_is_ro[0:0]
+Creating decoders for process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$51'.
+     1/2: $1\r_csr_mapped[0:0]
+     2/2: $1\w_csr_mapped[0:0]
+Creating decoders for process `\axil_slave.$proc$rtl/axi_lite/axil_slave.sv:172$24'.
+     1/3: $0\rresp_q[1:0]
+     2/3: $0\rdata_q[31:0]
+     3/3: $0\rvalid_q[0:0]
+Creating decoders for process `\axil_slave.$proc$rtl/axi_lite/axil_slave.sv:114$18'.
+     1/7: $0\bresp_q[1:0]
+     2/7: $0\bvalid_q[0:0]
+     3/7: $0\wstrb_q[3:0]
+     4/7: $0\wdata_q[31:0]
+     5/7: $0\awaddr_q[11:0]
+     6/7: $0\w_full_q[0:0]
+     7/7: $0\aw_full_q[0:0]
+Creating decoders for process `\reset_sync.$proc$rtl/common/reset_sync.sv:41$1'.
+     1/1: $0\sync_q[1:0]
+
+6.8. Executing PROC_DLATCH pass (convert process syncs to latches).
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:282$34.$result' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$128'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:282$38.$result' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$128'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:282$38.new_val' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$128'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:282$38.strb' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$128'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:282$38.merged' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$128'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:282$38.$fordecl_block$29.b' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$128'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:279$33.$result' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$116'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:279$37.$result' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$116'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:279$37.old_val' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$116'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:279$37.new_val' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$116'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:279$37.strb' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$116'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:279$37.merged' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$116'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:279$37.$fordecl_block$29.b' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$116'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:278$32.$result' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$104'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:278$36.$result' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$104'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:278$36.old_val' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$104'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:278$36.new_val' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$104'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:278$36.strb' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$104'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:278$36.merged' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$104'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:278$36.$fordecl_block$29.b' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$104'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:277$31.$result' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$92'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:277$35.$result' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$92'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:277$35.old_val' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$92'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:277$35.new_val' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$92'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:277$35.strb' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$92'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:277$35.merged' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$92'.
+No latch inferred for signal `\csr_regfile.\apply_strb$func$rtl/control/csr_regfile.sv:277$35.$fordecl_block$29.b' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$92'.
+No latch inferred for signal `\csr_regfile.\reg_rdata' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$89'.
+No latch inferred for signal `\csr_regfile.\reg_rerr' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$89'.
+No latch inferred for signal `\csr_regfile.\status_rd' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$55'.
+No latch inferred for signal `\csr_regfile.\cfg_rd' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$54'.
+No latch inferred for signal `\csr_regfile.\ctrl_rd' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$53'.
+No latch inferred for signal `\csr_regfile.\w_is_ro' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$52'.
+No latch inferred for signal `\csr_regfile.\w_csr_mapped' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$51'.
+No latch inferred for signal `\csr_regfile.\r_csr_mapped' from process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$51'.
+
+6.9. Executing PROC_DFF pass (convert process syncs to FFs).
+Creating register for signal `\csr_regfile.\ctrl_enable_q' using process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:309$70'.
+  created $adff cell `$procdff$329' with positive edge clock and negative level reset.
+Creating register for signal `\csr_regfile.\cfg_ntaps_q' using process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:309$70'.
+  created $adff cell `$procdff$330' with positive edge clock and negative level reset.
+Creating register for signal `\csr_regfile.\cfg_round_q' using process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:309$70'.
+  created $adff cell `$procdff$331' with positive edge clock and negative level reset.
+Creating register for signal `\csr_regfile.\cfg_sat_q' using process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:309$70'.
+  created $adff cell `$procdff$332' with positive edge clock and negative level reset.
+Creating register for signal `\csr_regfile.\cfg_sym_q' using process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:309$70'.
+  created $adff cell `$procdff$333' with positive edge clock and negative level reset.
+Creating register for signal `\csr_regfile.\irq_status_q' using process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:309$70'.
+  created $adff cell `$procdff$334' with positive edge clock and negative level reset.
+Creating register for signal `\csr_regfile.\irq_enable_q' using process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:309$70'.
+  created $adff cell `$procdff$335' with positive edge clock and negative level reset.
+Creating register for signal `\csr_regfile.\sat_sticky_q' using process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:309$70'.
+  created $adff cell `$procdff$336' with positive edge clock and negative level reset.
+Creating register for signal `\csr_regfile.\cfg_err_sticky_q' using process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:309$70'.
+  created $adff cell `$procdff$337' with positive edge clock and negative level reset.
+Creating register for signal `\csr_regfile.\sample_cnt_q' using process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:309$70'.
+  created $adff cell `$procdff$338' with positive edge clock and negative level reset.
+Creating register for signal `\csr_regfile.\frame_cnt_q' using process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:309$70'.
+  created $adff cell `$procdff$339' with positive edge clock and negative level reset.
+Creating register for signal `\csr_regfile.\cmd_soft_reset_q' using process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:309$70'.
+  created $adff cell `$procdff$340' with positive edge clock and negative level reset.
+Creating register for signal `\csr_regfile.\cmd_commit_q' using process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:309$70'.
+  created $adff cell `$procdff$341' with positive edge clock and negative level reset.
+Creating register for signal `\csr_regfile.\cmd_flush_q' using process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:309$70'.
+  created $adff cell `$procdff$342' with positive edge clock and negative level reset.
+Creating register for signal `\csr_regfile.\cmd_cnt_clr_q' using process `\csr_regfile.$proc$rtl/control/csr_regfile.sv:309$70'.
+  created $adff cell `$procdff$343' with positive edge clock and negative level reset.
+Creating register for signal `\axil_slave.\rvalid_q' using process `\axil_slave.$proc$rtl/axi_lite/axil_slave.sv:172$24'.
+  created $adff cell `$procdff$344' with positive edge clock and negative level reset.
+Creating register for signal `\axil_slave.\rdata_q' using process `\axil_slave.$proc$rtl/axi_lite/axil_slave.sv:172$24'.
+  created $adff cell `$procdff$345' with positive edge clock and negative level reset.
+Creating register for signal `\axil_slave.\rresp_q' using process `\axil_slave.$proc$rtl/axi_lite/axil_slave.sv:172$24'.
+  created $adff cell `$procdff$346' with positive edge clock and negative level reset.
+Creating register for signal `\axil_slave.\aw_full_q' using process `\axil_slave.$proc$rtl/axi_lite/axil_slave.sv:114$18'.
+  created $adff cell `$procdff$347' with positive edge clock and negative level reset.
+Creating register for signal `\axil_slave.\w_full_q' using process `\axil_slave.$proc$rtl/axi_lite/axil_slave.sv:114$18'.
+  created $adff cell `$procdff$348' with positive edge clock and negative level reset.
+Creating register for signal `\axil_slave.\awaddr_q' using process `\axil_slave.$proc$rtl/axi_lite/axil_slave.sv:114$18'.
+  created $adff cell `$procdff$349' with positive edge clock and negative level reset.
+Creating register for signal `\axil_slave.\wdata_q' using process `\axil_slave.$proc$rtl/axi_lite/axil_slave.sv:114$18'.
+  created $adff cell `$procdff$350' with positive edge clock and negative level reset.
+Creating register for signal `\axil_slave.\wstrb_q' using process `\axil_slave.$proc$rtl/axi_lite/axil_slave.sv:114$18'.
+  created $adff cell `$procdff$351' with positive edge clock and negative level reset.
+Creating register for signal `\axil_slave.\bvalid_q' using process `\axil_slave.$proc$rtl/axi_lite/axil_slave.sv:114$18'.
+  created $adff cell `$procdff$352' with positive edge clock and negative level reset.
+Creating register for signal `\axil_slave.\bresp_q' using process `\axil_slave.$proc$rtl/axi_lite/axil_slave.sv:114$18'.
+  created $adff cell `$procdff$353' with positive edge clock and negative level reset.
+Creating register for signal `\reset_sync.\sync_q' using process `\reset_sync.$proc$rtl/common/reset_sync.sv:41$1'.
+  created $adff cell `$procdff$354' with positive edge clock and negative level reset.
+
+6.10. Executing PROC_MEMWR pass (convert process memory writes to cells).
+
+6.11. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+Removing empty process `csr_regfile.$proc$rtl/control/csr_regfile.sv:0$128'.
+Removing empty process `csr_regfile.$proc$rtl/control/csr_regfile.sv:0$116'.
+Removing empty process `csr_regfile.$proc$rtl/control/csr_regfile.sv:0$104'.
+Removing empty process `csr_regfile.$proc$rtl/control/csr_regfile.sv:0$92'.
+Found and cleaned up 3 empty switches in `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$89'.
+Removing empty process `csr_regfile.$proc$rtl/control/csr_regfile.sv:0$89'.
+Found and cleaned up 13 empty switches in `\csr_regfile.$proc$rtl/control/csr_regfile.sv:309$70'.
+Removing empty process `csr_regfile.$proc$rtl/control/csr_regfile.sv:309$70'.
+Removing empty process `csr_regfile.$proc$rtl/control/csr_regfile.sv:0$55'.
+Removing empty process `csr_regfile.$proc$rtl/control/csr_regfile.sv:0$54'.
+Removing empty process `csr_regfile.$proc$rtl/control/csr_regfile.sv:0$53'.
+Found and cleaned up 1 empty switch in `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$52'.
+Removing empty process `csr_regfile.$proc$rtl/control/csr_regfile.sv:0$52'.
+Found and cleaned up 2 empty switches in `\csr_regfile.$proc$rtl/control/csr_regfile.sv:0$51'.
+Removing empty process `csr_regfile.$proc$rtl/control/csr_regfile.sv:0$51'.
+Found and cleaned up 2 empty switches in `\axil_slave.$proc$rtl/axi_lite/axil_slave.sv:172$24'.
+Removing empty process `axil_slave.$proc$rtl/axi_lite/axil_slave.sv:172$24'.
+Found and cleaned up 4 empty switches in `\axil_slave.$proc$rtl/axi_lite/axil_slave.sv:114$18'.
+Removing empty process `axil_slave.$proc$rtl/axi_lite/axil_slave.sv:114$18'.
+Removing empty process `reset_sync.$proc$rtl/common/reset_sync.sv:41$1'.
+Cleaned up 25 empty switches.
+
+6.12. Executing OPT_EXPR pass (perform const folding).
+Optimizing module csr_regfile.
+<suppressed ~11 debug messages>
+Optimizing module axil_slave.
+<suppressed ~1 debug messages>
+Optimizing module reset_sync.
+
+7. Executing OPT_EXPR pass (perform const folding).
+Optimizing module csr_regfile.
+Optimizing module axil_slave.
+Optimizing module reset_sync.
+
+8. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \csr_regfile..
+Finding unused cells or wires in module \axil_slave..
+Finding unused cells or wires in module \reset_sync..
+Removed 13 unused cells and 189 unused wires.
+<suppressed ~16 debug messages>
+
+9. Executing CHECK pass (checking for obvious problems).
+Checking module axil_slave...
+Checking module csr_regfile...
+Checking module reset_sync...
+Found and reported 0 problems.
+
+10. Printing statistics.
+
+=== axil_slave ===
+
+   Number of wires:                 71
+   Number of wire bits:            454
+   Number of public wires:          47
+   Number of public wire bits:     305
+   Number of memories:               0
+   Number of memory bits:            0
+   Number of processes:              0
+   Number of cells:                 47
+     $adff                          10
+     $logic_and                      9
+     $logic_not                      4
+     $logic_or                       2
+     $mux                           22
+
+=== csr_regfile ===
+
+   Number of wires:                192
+   Number of wire bits:           1528
+   Number of public wires:          97
+   Number of public wire bits:    1073
+   Number of memories:               0
+   Number of memory bits:            0
+   Number of processes:              0
+   Number of cells:                161
+     $add                            2
+     $adff                          15
+     $and                            2
+     $eq                            46
+     $gt                             1
+     $logic_and                     13
+     $logic_not                     14
+     $logic_or                       4
+     $lt                             2
+     $mux                           56
+     $not                            1
+     $pmux                           1
+     $reduce_or                      4
+
+=== reset_sync ===
+
+   Number of wires:                  4
+   Number of wire bits:              5
+   Number of public wires:           4
+   Number of public wire bits:       5
+   Number of memories:               0
+   Number of memory bits:            0
+   Number of processes:              0
+   Number of cells:                  1
+     $adff                           1
+
+End of script. Logfile hash: 5cb87eeec8, CPU: user 0.06s system 0.00s, MEM: 12.36 MB peak
+Yosys 0.33 (git sha1 2584903a060)
+Time spent: 34% 5x read_verilog (0 sec), 23% 2x opt_expr (0 sec), ...

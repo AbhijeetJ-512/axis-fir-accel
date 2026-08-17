@@ -1,0 +1,45 @@
+# -----------------------------------------------------------------------------
+# elab_check.ys -- structural sanity gate, run at the end of every RTL phase.
+#
+# This is NOT technology mapping. It elaborates the RTL and asserts the
+# structural properties that requirements SR-02 and SR-07 demand:
+#
+#   - zero inferred latches        (an accidental latch is a design bug, and it
+#                                   is far cheaper to catch here than in STA)
+#   - zero tri-state buffers       (this IP has no bidirectional signals)
+#   - no combinational loops       ('check -assert' fails on them)
+#   - every module resolves        (no implicit black boxes from a typo'd
+#                                   instance name)
+#
+# Usage:  yosys -c /dev/null -s synthesis/scripts/elab_check.ys
+#     or: make -C . elab   (see the top-level Makefile)
+# -----------------------------------------------------------------------------
+
+# A single read_verilog so that the package and the macro header are visible to
+# every file in one compilation unit.
+read_verilog -sv -I rtl/common \
+    rtl/common/fir_pkg.sv \
+    rtl/common/reset_sync.sv \
+    rtl/axi_lite/axil_slave.sv \
+    rtl/control/csr_regfile.sv
+
+# Elaborate every module standalone so that an unused module cannot hide a bug.
+hierarchy -check
+
+# Convert always-blocks to netlist primitives; this is where latches appear.
+proc
+opt_expr
+opt_clean
+
+# --- Assertions -------------------------------------------------------------
+# 'select -assert-none' exits non-zero if the selection is non-empty.
+select -assert-none t:$dlatch
+select -assert-none t:$adlatch
+select -assert-none t:$_DLATCH_*
+select -assert-none t:$tribuf
+select -assert-none t:$_TBUF_*
+
+# Structural check: combinational loops, undriven wires, multiple drivers.
+check -assert
+
+stat

@@ -342,4 +342,173 @@ the layout.
 
 ---
 
-*Entries D-012 onward will be added during Phase 1.*
+## D-012 — RTL is written to the Yosys ∩ Icarus SystemVerilog subset
+
+**2026-08-17 · Phase 1**
+
+**Problem.** The first attempt to run the structural gate failed: RTL that Icarus compiled
+without complaint was rejected outright by Yosys 0.33. Discovering these one error at a time
+would have meant three separate rewrites, so the front end was probed systematically instead.
+
+**Findings** (each verified with a minimal test case, not assumed):
+
+| Construct | Icarus 12 | Yosys 0.33 |
+|---|---|---|
+| `function` inside a `package` | accepts | **rejects** |
+| `import pkg::*` — header, file scope, or module body | accepts | **rejects, all three** |
+| `int'(expr)` cast | accepts | **rejects** |
+| `pkg::NAME` fully qualified (constants, enum literals, enum types) | accepts | accepts |
+| `typedef enum` / `localparam` in a package | accepts | accepts |
+| `N'(expr)` size cast, `'0`/`'1`, `+:` part-select | accepts | accepts |
+| `always_comb` with `for`, `always_ff` async reset, generate-`if`, function in a *module* | accepts | accepts |
+
+**Decision.** Three project-wide coding rules:
+
+1. **Never `import`.** Always write `fir_pkg::NAME` in full.
+2. **No functions in packages.** Width derivations become preprocessor macros in
+   `rtl/common/fir_defs.svh`; single-module helpers are declared inside that module.
+3. **No `int'()` casts.** Use width-matched localparams and plain unsigned comparisons.
+
+**Reason.** The alternative — carrying RTL only one of two mandatory tools can read — hides a
+Phase 8 failure inside Phase 1 work. Since synthesisability is a MUST requirement (SR-01), the
+language subset is part of the specification, not a detail. Full qualification also turns out to
+read better: every constant visibly announces where it comes from.
+
+**Tradeoffs.** `fir_pkg::` prefixes are verbose (91 of them in `csr_regfile` alone). Macros are
+less type-safe than functions. Both are accepted as the cost of a toolchain that actually runs.
+If `sv2v` is added later this constraint could be relaxed, but that would add a dependency to
+buy back only syntax.
+
+**Result.** `rtl/common/fir_defs.svh` created; imports removed; `scripts/elab_sweep.sh` added so
+the gate runs across parameter sets, not just the default build. All five configurations
+elaborate with zero latches, zero tri-states and no combinational loops.
+
+---
+
+## D-013 — AXI4-Lite write throughput traded for channel independence
+
+**2026-08-17 · Phase 1**
+
+**Problem.** `AWREADY` could be allowed to depend on `BREADY`, letting a new write be accepted
+in the same cycle the previous response retires (1 write per cycle). Or it could depend only on
+registered state (1 write per 3 cycles).
+
+**Decision.** Registered-only. `AWREADY = !bvalid_q && !aw_full_q`.
+
+**Reason.** A combinational path from `BREADY` back to `AWREADY` is a genuine integration hazard:
+an interconnect whose `BREADY` depends on the slave's `AWREADY` closes a loop that neither side
+can see in isolation. The control plane carries one-time configuration traffic — 64 coefficient
+writes at 3 cycles each is 192 cycles, roughly 2 µs at 100 MHz, once per reconfiguration. That
+bandwidth is irrelevant; the loop risk is not.
+
+**Tradeoffs.** 3× the write latency. Recovering it would need a response FIFO, which costs more
+area than the entire CSR block saves.
+
+**Result.** Verified by `test_aw_w_channel_ordering` and continuous protocol monitoring.
+
+---
+
+## D-014 — Writes to read-only registers return OKAY, not SLVERR
+
+**2026-08-17 · Phase 1**
+
+**Problem.** Should a write to `ID`, `CAPABILITY`, `STATUS` or the counters be an error?
+
+**Decision.** Silently ignored, answered `OKAY`. `SLVERR` is reserved for unmapped addresses and
+for `CFG` writes while `BUSY`.
+
+**Reason.** Driver code routinely read-modify-writes across a register block; making a harmless
+write to a status register a bus fault turns ordinary driver patterns into crashes. `SLVERR`
+should mean "your software has a bug that will lose data" — a wrong address, or a configuration
+change at a moment that would corrupt an in-flight frame.
+
+**Tradeoffs.** A driver bug that writes to a RO register goes unreported. Accepted: it is
+harmless by construction, whereas the false-positive cost is real.
+
+**Result.** Documented in `04_interfaces.md` §3.3 as a contract. Verified by
+`test_ro_registers_ignore_writes`.
+
+---
+
+## D-015 — `CFG_ERR` fires on enable, not on reset
+
+**2026-08-17 · Phase 1**
+
+**Problem.** `NTAPS` resets to 0, which is an illegal tap count. The first implementation
+therefore raised sticky `CFG_ERR` and an interrupt on the first clock edge after reset, before
+software had written anything.
+
+**Decision.** Separate the two ideas. `cfg_illegal` stays a pure combinational validity
+indicator (used to gate the FSM). The *sticky* status bit and the interrupt are driven by
+`cfg_err_event = ctrl_enable && cfg_illegal`.
+
+**Reason.** An unconfigured block is not a faulted block. A status bit that is always set at
+reset carries no information and trains software to ignore it — which is worse than not having
+it. Requirement FR-21 asks for the error when an illegally-configured block is *enabled*, which
+is exactly what this implements.
+
+**Tradeoffs.** Software cannot use `CFG_ERR` to pre-validate a configuration without enabling.
+Acceptable: it can read `CFG` back and check the value itself, and `cfg_illegal` is available to
+the FSM regardless.
+
+**Result.** `test_reset_values` asserts `CFG_ERR == 0` out of reset;
+`test_illegal_configuration` asserts it sets on enable and not before.
+
+---
+
+## D-016 — Simulation build directory is keyed on the parameter set
+
+**2026-08-17 · Phase 1**
+
+**Problem.** The first parameter sweep reported four "failures" in three configurations. All
+were false: `make NTAPS_MAX=32` reused the compiled `NTAPS_MAX=64` simulation, because changing
+a make *variable* does not invalidate a target whose *sources* are unchanged. Every build in the
+sweep was the same 64-tap binary.
+
+**Decision.** `SIM_BUILD` and the results file are keyed on the full parameter tuple.
+
+**Reason.** A regression that silently tests the wrong build is worse than no regression: it
+produces confident green results for configurations that were never elaborated. This is exactly
+the class of failure this project exists to avoid.
+
+**Tradeoffs.** One build directory per configuration, so `make clean` matters and disk use grows
+with the sweep. Trivially worth it.
+
+**Result.** The sweep now reports a distinct, correct `CAPABILITY` for each of five
+configurations. The `CAPABILITY` register turned out to be the thing that caught this — worth
+noting, since it was added for software discoverability, not for testbench self-checking.
+
+---
+
+## D-017 — Protocol monitor samples on the falling edge
+
+**2026-08-17 · Phase 1**
+
+**Problem.** The randomised traffic test failed with `156 AW accepted, 157 B responses`. The RTL
+was checked first: `reg_wen` requires `!bvalid_q` and the response-retire arm requires
+`bvalid_q`, so the two are mutually exclusive and a duplicate response is structurally
+impossible. The fault was in the monitor.
+
+**Options considered.** Sample at `RisingEdge` then `ReadOnly` (the common idiom); reorder the
+driver's signal updates; sample mid-cycle at `FallingEdge`.
+
+**Decision.** Sample at `FallingEdge` then `ReadOnly`.
+
+**Reason.** `RisingEdge` + `ReadOnly` places the monitor in the *same timestep* as the clock
+edge, racing the drivers, which update their signals in that same timestep in response to the
+same edge. Depending on coroutine scheduling order the monitor sees pre-edge or post-edge
+values, so a handshake can be double-counted or missed. Every driver in this environment acts
+only on rising edges, so mid-cycle is quiescent: the values at the falling edge are exactly the
+values the next rising edge will transfer.
+
+**Tradeoffs.** Assumes a roughly 50% duty cycle and that no driver acts on the falling edge —
+both true here, and both stated in the monitor's docstring so a future change cannot silently
+break the assumption.
+
+**Result.** AW and B counts now agree exactly (157/157). The episode is worth keeping: the first
+instinct on a count mismatch is to suspect the DUT, and checking the RTL's structural argument
+*before* changing anything is what identified it as a testbench bug in one step.
+
+---
+
+*Entries D-018 onward will be added during Phase 2.*

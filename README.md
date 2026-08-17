@@ -2,10 +2,21 @@
 
 **A programmable fixed-point FIR filter accelerator with AXI4-Stream data plane and AXI4-Lite control plane.**
 
-> **Project status: Phase 0 of 12 — architecture baselined, RTL not yet written.**
-> No performance, area, timing, power or coverage figures are claimed yet. Every such figure in
-> this repository is currently labelled **NOT YET MEASURED** and will be replaced only by values
-> read out of a checked-in tool report.
+> **Project status: Phase 1 of 12 complete — AXI4-Lite control plane implemented and verified.**
+> The datapath does not exist yet. No performance, area, timing or power figure is claimed; every
+> such figure below is labelled **NOT YET MEASURED** and will be replaced only by a value read out
+> of a checked-in tool report.
+
+```
+$ make regress && make elab-sweep
+** TESTS=16 PASS=16 FAIL=0 SKIP=0 **
+  PASS  NTAPS_MAX=64   MAC_UNITS=8   SYM=1
+  PASS  NTAPS_MAX=32   MAC_UNITS=4   SYM=1
+  PASS  NTAPS_MAX=256  MAC_UNITS=1   SYM=0
+  PASS  NTAPS_MAX=16   MAC_UNITS=8   SYM=1
+  PASS  NTAPS_MAX=128  MAC_UNITS=16  SYM=1
+elab_sweep: all configurations clean (no latches, no tri-states, no loops)
+```
 
 ---
 
@@ -62,21 +73,24 @@ Full detail: [`docs/02_architecture.md`](docs/02_architecture.md).
 
 | Feature | Status |
 |---|---|
-| `y[n] = Σ h[k]·x[n-k]`, runtime tap count `1 ≤ N ≤ NTAPS_MAX` | Specified |
-| Q1.15 samples and coefficients, exact Q2.30 products | Specified |
-| Derived, provably overflow-free accumulator | Specified |
-| Truncate / round-half-up / convergent rounding | Specified |
-| Symmetric and asymmetric saturation with sticky status | Specified |
-| Linear-phase symmetric-coefficient folding (halves multipliers) | Specified |
-| Runtime coefficient reload via shadow bank, atomic at frame boundary | Specified |
-| Credit-gated, non-stalling pipeline; independent input/output backpressure | Specified |
-| `MAC_UNITS` resource folding parameter | Specified |
-| AXI4-Lite CSRs with `SLVERR` error responses and interrupt | Specified |
-| Runtime-discoverable `CAPABILITY` register | Specified |
-| Dual-clock control/data split with proper CDC | Planned — Phase 7 |
+| AXI4-Lite CSRs, byte-strobed, with `SLVERR` policy and interrupt | **Implemented, verified** |
+| Runtime-discoverable `CAPABILITY` register | **Implemented, verified** |
+| RW1C interrupt status with set-wins-over-clear | **Implemented, verified** |
+| Coefficient region decode with out-of-range rejection | **Implemented, verified** |
+| Reset synchroniser (async assert, sync de-assert) | **Implemented, verified** |
+| `y[n] = Σ h[k]·x[n-k]`, runtime tap count `1 ≤ N ≤ NTAPS_MAX` | Specified — Phase 3 |
+| Q1.15 samples and coefficients, exact Q2.30 products | Specified — Phase 3 |
+| Derived, provably overflow-free accumulator | Specified — Phase 3 |
+| Truncate / round-half-up / convergent rounding | Specified — Phase 3 |
+| Symmetric and asymmetric saturation with sticky status | Specified — Phase 3 |
+| Linear-phase symmetric-coefficient folding (halves multipliers) | Specified — Phase 3 |
+| Credit-gated, non-stalling pipeline; independent backpressure | Specified — Phase 2/4 |
+| Runtime coefficient reload via shadow bank, atomic at frame boundary | Specified — Phase 4 |
+| `MAC_UNITS` resource folding parameter | Specified — Phase 4 |
+| Dual-clock control/data split with proper CDC | Specified — Phase 7 |
 
-Nothing above is implemented yet. See [`docs/00_project_plan.md`](docs/00_project_plan.md) for
-the phase plan and each phase's Definition of Done.
+See [`docs/00_project_plan.md`](docs/00_project_plan.md) for the phase plan and each phase's
+Definition of Done.
 
 ---
 
@@ -87,9 +101,9 @@ the phase plan and each phase's Definition of Done.
 | [`00_project_plan.md`](docs/00_project_plan.md) | Repository layout, 12 phases, risks, toolchain | Complete |
 | [`01_requirements.md`](docs/01_requirements.md) | Tiered requirements (MUST/SHOULD/NICE) | Complete |
 | [`02_architecture.md`](docs/02_architecture.md) | Blocks, dataflow, flow control, reset, bottlenecks | Complete |
-| [`engineering_log.md`](docs/engineering_log.md) | Every decision with options and tradeoffs | Live |
+| [`engineering_log.md`](docs/engineering_log.md) | Every decision with options and tradeoffs (D-001…D-017) | Live |
+| [`04_interfaces.md`](docs/04_interfaces.md) | Signal tables, register map, driver sequence | Complete for AXI4-Lite |
 | `03_microarchitecture.md` | RTL-level block detail, pipeline, corner cases | Phase 4 |
-| `04_interfaces.md` | Signal tables, register map, timing | Phase 1 |
 | `05_fixed_point.md` | Numerical model, derivations, equations | Phase 3 |
 | `06_verification_plan.md` | Strategy, verification matrix | Phase 5 |
 | `07_testbench_architecture.md` | TB components, UVM justification | Phase 5 |
@@ -125,20 +139,37 @@ Standard-cell libraries: **Nangate45** (primary) and **Sky130HD** (portability d
 
 ## Build and run
 
-Not yet available — RTL begins in Phase 1. Targets will be:
+Working today:
 
 ```bash
-make regress    # full cocotb regression
-make lint       # Verilator -Wall
-make synth      # Yosys -> Nangate45 and Sky130HD
-make sta        # OpenSTA timing reports
-make formal     # SymbiYosys proofs
-make ppa        # MAC_UNITS sweep -> results/ppa/
+make tools           # report which tools are present
+make regress         # cocotb regression (16 tests, default parameters)
+make sweep           # regression across 5 parameter sets
+make elab            # Yosys structural gate: latches / tri-states / loops
+make elab-sweep      # the same gate across 5 parameter sets
+make verify-widths   # executable proof of the accumulator derivation
+make waves           # regression with an FST dump for GTKWave
 ```
+
+Requires `iverilog`, `yosys`, `python3` and `pip install cocotb`.
+
+Planned for later phases: `make lint` (Verilator), `make synth` (Yosys → Nangate45/Sky130HD),
+`make sta` (OpenSTA), `make formal` (SymbiYosys), `make ppa` (`MAC_UNITS` sweep).
 
 ---
 
 ## Results
+
+**Verified so far** (reproduce with `make regress && make elab-sweep`):
+
+| Result | Value | Evidence |
+|---|---|---|
+| Control-plane regression | 16/16 tests pass, 5 parameter sets | `make sweep` |
+| Inferred latches / tri-states / combinational loops | **0**, all 5 configurations | `synthesis/reports/elab_*.log` |
+| Accumulator width derivation | sufficient **and** minimal, `NTAPS_MAX` 4…256 | `make verify-widths` |
+| AXI4-Lite protocol violations | **0** (monitor active in every test) | `tb/cocotb/env/axil_driver.py` |
+
+**Not yet measured** — the datapath does not exist until Phase 3:
 
 | Metric | Value |
 |---|---|
