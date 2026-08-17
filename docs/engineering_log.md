@@ -511,4 +511,125 @@ instinct on a count mismatch is to suspect the DUT, and checking the RTL's struc
 
 ---
 
-*Entries D-018 onward will be added during Phase 2.*
+## D-018 — `credit_ctr` pulled forward from Phase 4 into Phase 2
+
+**2026-08-17 · Phase 2**
+
+**Problem.** The plan scheduled `axis_fifo` for Phase 2 and the credit counter for Phase 4. But
+the credit invariant is only testable on a path that *has* a pipeline in it, so under the
+original split Phase 2 would prove FIFO correctness and nothing about flow control, and Phase 4
+would have to bring up the fold scheduler and the flow control simultaneously.
+
+**Decision.** Build `credit_ctr` in Phase 2. The Phase 2 device under test becomes the Phase 4
+stream skeleton with the arithmetic replaced by a fixed-latency dummy pipe.
+
+**Reason.** The dummy pipe has exactly the three properties flow control depends on — fixed
+latency, one output per input, never stalls — and no others. Everything proved about
+losslessness, ordering, `TLAST` alignment and the credit invariant therefore transfers unchanged
+when the real datapath replaces it. Phase 4 then adds only the fold scheduler.
+
+**Tradeoffs.** Phase 2 is larger than planned. Accepted, and declared rather than made silently
+(cross-phase rule 3).
+
+**Result.** 12 stream tests passing across five FIFO/pipe configurations.
+
+---
+
+## D-019 — `TREADY` during reset: the requirement was wrong, not the RTL
+
+**2026-08-17 · Phase 2**
+
+**Problem.** `test_reset_midstream` failed on the assertion that `s_axis_tready` is low
+throughout reset. Investigation: resetting the FIFO pointers makes the buffer empty, and
+`s_tready = !full`, so `s_axis_tready` is **high** during reset.
+
+**Options considered.**
+1. Change the RTL: `s_tready = !full && rst_n`.
+2. Change the requirement.
+
+**Decision.** Change the requirement (CR-04).
+
+**Reason.** The AXI4-Stream specification constrains the *master* during reset — `TVALID` must be
+low, and may not be asserted until a rising edge after `ARESETn` is high. It places **no
+requirement on `TREADY`**, precisely because a compliant master presents nothing for a high
+`TREADY` to accept. `m_axis_tvalid` *is* correctly low during reset (the output FIFO is empty),
+so the IP is compliant. Gating `s_tready` with `rst_n` would insert the reset net into the ready
+path — extra logic and extra load on a timing-relevant signal — to satisfy a rule that does not
+exist.
+
+**Tradeoffs.** A requirement changed to match an implementation always deserves suspicion. The
+justification here is external to the project (the AMBA specification), not a rationalisation of
+convenience, and the corrected requirement is *stricter about the thing that matters*: it now
+names `m_axis_tvalid` explicitly as the property under test.
+
+**Result.** CR-04 rewritten with the reasoning inline. Test now asserts `m_axis_tvalid == 0`
+on every reset cycle.
+
+---
+
+## D-020 — `soft_clear` must not flush the output FIFO
+
+**2026-08-17 · Phase 2**
+
+**Problem.** The output protocol monitor caught a genuine violation:
+`m_axis: TVALID withdrawn without TREADY`. Asserting `soft_clear` while the output FIFO held a
+beat the consumer had not yet accepted reset the FIFO pointers, dropping `TVALID` mid-transfer.
+
+**Options considered.**
+1. Document it: `SOFT_RESET` is a local reset, and software must quiesce the stream first.
+2. Delay the flush until the presented beat is accepted — deadlocks if the consumer never is.
+3. Flush the input FIFO and the pipeline but **not** the output FIFO, reconciling the credits.
+
+**Decision.** Option 3.
+
+**Reason.** The downstream consumer has no visibility of our soft reset. Having offered it a
+beat, we are not entitled to withdraw it — that is what the protocol rule exists to prevent, and
+"the driver should have known better" is not a design. Option 3 keeps the interface contract
+intact at the cost of one subtractor.
+
+The subtlety is credits. A flush discards in-flight samples, whose credits would otherwise never
+be returned, so the counter would leak downward on every flush until throughput collapsed. The
+counter is therefore *reloaded* on flush with the exact number of free output slots after the
+cycle's push and pop settle: `MAX_CREDITS - (out_count + push - pop)`. That restores the
+invariant precisely rather than approximately. `credit_ctr` gained a `clear_value` port for this.
+
+**Tradeoffs.** `FLUSH` no longer means "the IP is completely empty afterwards" — already-computed
+results still drain out. That is the correct semantic anyway: those results are valid outputs of
+the *old* configuration and the downstream asked for them.
+
+**Result.** `test_soft_clear` now asserts the reconciled credit value against the retained
+occupancy. Zero protocol violations across all five stream configurations.
+
+---
+
+## D-021 — TR-04 is established structurally, and the checker self-tests
+
+**2026-08-17 · Phase 2**
+
+**Problem.** "No combinational path from `m_axis_tready` to `s_axis_tready`" cannot be
+established by simulation. Simulation samples behaviour; the hazard is a loop that only closes
+when a particular interconnect is attached, which the testbench never is.
+
+**Decision.** Check it structurally on the elaborated netlist with Yosys `%cie*` — cone of
+influence through combinational cells only — intersected with the source port.
+
+**Reason.** The property is structural, so the evidence should be too.
+
+Two mistakes were made getting there, both worth recording. First, `%ci*:-$dff` (the obvious
+"don't traverse flops" syntax) does not work; `%cie` is the purpose-built operator. Second, and
+more dangerous: `select @cone i:m_axis_tready` computes a **union**, which is never empty, so the
+check passed vacuously on a module that was deliberately built to fail. The intersection
+operator `%i` is required.
+
+That second mistake is the reason the script now **self-tests**: before checking the design it
+runs the same probe against two tiny modules where the answer is known — one with a direct wire,
+one with a flop in the path — and aborts unless it gets exactly one FOUND and one clean. A check
+that cannot demonstrate a failure is not evidence of anything.
+
+**Result.** `scripts/check_comb_independence.sh`. Three properties pass on
+`axis_loopback_wrap`: TR-04, plus no `TVALID` and no `TDATA` feedthrough, so chained stream
+instances cannot accumulate an unbounded combinational path.
+
+---
+
+*Entries D-022 onward will be added during Phase 3.*

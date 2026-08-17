@@ -443,8 +443,9 @@ Throughput column is arithmetic from `II`, assuming the 100 MHz floor of TR-02.
 |---|---|---|
 | Delay line | All zeros | `aresetn`, `SOFT_RESET`, `FLUSH` |
 | Accumulator / pipeline registers | Zero, valid pipe cleared | `aresetn`, `SOFT_RESET` |
-| Input / output FIFO pointers | Empty | `aresetn`, `SOFT_RESET` |
-| Credit counter | `OUT_FIFO_DEPTH` | `aresetn`, `SOFT_RESET` |
+| Input FIFO pointers | Empty | `aresetn`, `SOFT_RESET` |
+| **Output FIFO pointers** | Empty | **`aresetn` only** — see §7.1 |
+| Credit counter | `OUT_FIFO_DEPTH` on `aresetn`; **reconciled** on `SOFT_RESET` | see §7.1 |
 | `fir_ctrl` state | `IDLE` | `aresetn`, `SOFT_RESET` |
 | `CFG`, `IRQ_ENABLE` | Zero | `aresetn` only |
 | Coefficient banks, `bank_sel` | **Undefined** (not reset) | Neither — see below |
@@ -457,6 +458,32 @@ across the largest register array in the design for no functional benefit — so
 coefficients before enabling the block regardless, and `CFG_ERR`/`ENABLE` gating prevents
 streaming with an unconfigured filter. This is a conscious area/routing tradeoff, recorded in
 the engineering log, and it is the kind of decision a synthesis engineer will ask about.
+
+### 7.1 Why `SOFT_RESET` does not clear the output FIFO
+
+*(Added in Phase 2 after the output protocol monitor caught a real violation — engineering log
+D-020.)*
+
+Clearing the output FIFO pointers while a beat is being presented drops `m_axis_tvalid` before
+`m_axis_tready` is seen. That is an AXI4-Stream violation, and it is not a technicality: the
+downstream consumer has no visibility of our soft reset, and having been offered a beat it is
+entitled to receive it.
+
+`SOFT_RESET` therefore flushes the **input FIFO, the delay line and the pipeline**, and leaves
+already-computed results to drain out normally. Those results are valid outputs of the
+configuration that produced them, and the consumer asked for them.
+
+This creates one obligation. A flush discards in-flight samples whose credits would otherwise
+never be returned, so the counter would leak downward on every flush until throughput collapsed.
+The credit counter is therefore **reloaded**, not reset, with the exact number of free output
+slots once the cycle's push and pop have settled:
+
+```
+credits_after_flush = OUT_FIFO_DEPTH - (out_fifo_count + out_push - out_pop)
+```
+
+One subtractor, and the invariant `in_flight + occupancy <= OUT_FIFO_DEPTH` is restored exactly
+rather than approximately. `credit_ctr` exposes a `clear_value` port for this purpose.
 
 **Reset style:** asynchronous assert, synchronous de-assert, via a two-flop reset synchroniser
 in `rtl/common/reset_sync.sv`. Asynchronous assertion guarantees the IP goes safe even if the

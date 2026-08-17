@@ -1,9 +1,9 @@
 # 04 — Interface Specification
 
 **IP:** `axis_fir_accel`
-**Revision:** 0.2 · Phase 1
-**Status:** AXI4-Lite control plane **implemented and verified**. AXI4-Stream interfaces
-**specified only** — implemented in Phase 2.
+**Revision:** 0.3 · Phase 2
+**Status:** AXI4-Lite control plane and AXI4-Stream flow control **implemented and verified**.
+The FIR arithmetic that occupies the pipeline arrives in Phase 3.
 
 This document is written so that a firmware engineer can write a driver without reading RTL.
 
@@ -34,8 +34,13 @@ This document is written so that a firmware engineer can write a driver without 
 - `aresetn` must be held low for at least 2 `aclk` cycles after the clock is stable, so both
   synchroniser stages load.
 - Throughout reset, `s_axil_awready`, `s_axil_wready`, `s_axil_arready`, `s_axil_bvalid`,
-  `s_axil_rvalid`, `s_axis_tready` and `m_axis_tvalid` are all held **low**. The IP is therefore
-  protocol-legal from the first cycle and cannot accept or emit a transaction during reset.
+  `s_axil_rvalid` and `m_axis_tvalid` are held **low**. The IP is therefore protocol-legal from
+  the first cycle and cannot accept or emit a transaction during reset.
+- **`s_axis_tready` is high during reset**, and this is deliberate. AXI4-Stream constrains the
+  *master* during reset — `TVALID` must be low — and places no requirement on `TREADY`, because a
+  compliant master presents nothing for a high `TREADY` to accept. Gating `s_axis_tready` with
+  reset would insert the reset net into the ready path for no benefit. See requirement CR-04 and
+  engineering log D-019.
 - Reset may be asserted at any time, including mid-stream. Data in flight is discarded — this is
   documented behaviour (requirement CR-05), not a violation of the losslessness guarantee, which
   applies to reset-free operation.
@@ -264,9 +269,11 @@ then set `CTRL.COEFF_COMMIT`. The swap happens at the next frame boundary; poll
 
 ---
 
-## 5. AXI4-Stream Interfaces — **SPECIFIED, NOT YET IMPLEMENTED**
+## 5. AXI4-Stream Interfaces
 
-Implemented in Phase 2. Recorded here so the contract is fixed before the RTL exists.
+**Status:** the elastic buffers, flow control and stream contract are **implemented and verified**
+(Phase 2). `TDATA` currently carries samples through a fixed-latency pass-through; the FIR
+arithmetic that will occupy that pipeline arrives in Phase 3.
 
 ### 5.1 Input (`s_axis_*`, slave)
 
@@ -296,14 +303,38 @@ status bit plus an interrupt gives software the same information at zero interfa
 
 ### 5.3 Stream Rules the IP Guarantees
 
-| Rule | Guarantee |
-|---|---|
-| No data loss | Every accepted input beat produces exactly one output beat |
-| Order preserving | Output beat *n* corresponds to input beat *n* |
-| `TLAST` alignment | `TLAST` travels in a shift register parallel to the datapath; it cannot drift |
-| Output stability | Once `m_axis_tvalid` is high, `TDATA`/`TLAST` are stable until `TREADY` — **by construction**, since they are FIFO read-data registers |
-| No deadlock | The only candidate cycle (`m_axis_tready → s_axis_tready`) is broken by the FIFOs |
-| Data-independent timing | No stall depends on a data value |
+| Rule | Guarantee | Evidence |
+|---|---|---|
+| No data loss | Every accepted input beat produces exactly one output beat | 100 000-beat randomised stream, exact sequence match |
+| Order preserving | Output beat *n* corresponds to input beat *n* | same |
+| `TLAST` alignment | `TLAST` travels beside its sample and cannot drift | `test_tlast_positions`, 14 frames of lengths 1…31 |
+| Output stability | `TDATA`/`TLAST` stable while `TVALID && !TREADY` — **by construction**, they are the FIFO read data | protocol monitor, every test |
+| No `TVALID` withdrawal | `TVALID` is never deasserted without a handshake | protocol monitor, every test |
+| No deadlock | The candidate cycle `m_axis_tready → s_axis_tready` does not exist | `scripts/check_comb_independence.sh` |
+| Output FIFO never overflows | `in_flight + occupancy ≤ OUT_FIFO_DEPTH` by credit counting | per-cycle invariant checker, every test |
+| Data-independent timing | No stall depends on a data value | `II = 1.0` measured under continuous streaming |
+
+### 5.4 Reset and Flush Semantics on the Stream Interfaces
+
+| Event | Input FIFO | Delay line / pipeline | Output FIFO | Credits |
+|---|---|---|---|---|
+| `aresetn` low | cleared | cleared | cleared | full |
+| `CTRL.SOFT_RESET` | cleared | cleared | **retained** | **reconciled** |
+| `CTRL.FLUSH` | cleared | zeroed | **retained** | **reconciled** |
+
+`SOFT_RESET` and `FLUSH` deliberately leave the output FIFO alone. Clearing it would drop
+`m_axis_tvalid` on a beat already offered to the consumer, which the protocol forbids and which
+the consumer cannot anticipate — it has no visibility of our soft reset. Already-computed
+results are valid outputs of the configuration that produced them and are allowed to drain.
+
+Because the flush discards in-flight samples, the credit counter is **reloaded** with
+`OUT_FIFO_DEPTH - (occupancy + push - pop)` rather than reset to full, which restores the
+invariant exactly and prevents the credit leak that a plain reset would cause. See
+`docs/02_architecture.md` §7.1 and engineering log D-020.
+
+**Software implication:** after a `SOFT_RESET` the IP may still emit a bounded number of beats
+(at most `OUT_FIFO_DEPTH`) belonging to the pre-reset stream. A driver that must discard them
+should count them out, or reset the downstream consumer as well.
 
 ---
 
@@ -311,16 +342,19 @@ status bit plus an interrupt gives software the same information at zero interfa
 
 | Interface | Status | Evidence |
 |---|---|---|
-| AXI4-Lite | **Verified** | 16/16 cocotb tests pass across 5 parameter sets. Protocol monitor active in every test |
+| AXI4-Lite | **Verified** | 16/16 cocotb tests across 5 parameter sets; protocol monitor active in every test |
 | Reset synchroniser | **Verified** | Exercised by every test's reset sequence |
 | Coefficient region decode | **Verified** | `test_coefficient_region`, incl. out-of-range rejection |
-| AXI4-Stream in/out | **NOT YET IMPLEMENTED** | Phase 2 |
+| AXI4-Stream in/out | **Verified** | 12/12 cocotb tests across 5 FIFO/pipe configurations; 100 000-beat exact match |
+| Credit invariant | **Verified** | Per-cycle checker: output FIFO never written while full |
+| TR-04 (no comb path) | **Verified structurally** | `scripts/check_comb_independence.sh`, with self-test |
 | Latch-free elaboration | **Verified** | `scripts/elab_sweep.sh` — 5 configs, zero latches/tri-states/loops |
+| FIR arithmetic | **NOT YET IMPLEMENTED** | Phase 3 |
 
 Reproduce with:
 
 ```bash
-make regress && make elab
+make check     # both suites + latch sweep + comb-independence + width derivation
 ```
 
 ---
@@ -331,3 +365,4 @@ make regress && make elab
 |---|---|---|
 | 0.1 | 2026-08-17 | Register map drafted (Phase 0) |
 | 0.2 | 2026-08-17 | AXI4-Lite implemented and verified; measured CAPABILITY values added; error policy fixed |
+| 0.3 | 2026-08-17 | AXI4-Stream flow control implemented and verified; reset/flush semantics specified (D-020); CR-04 corrected (D-019) |

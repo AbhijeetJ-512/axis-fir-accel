@@ -170,11 +170,26 @@ simulation in Phase 4.
 | CR-01 | M | Phase 1–6: the design shall be **single-clock**, driven by `aclk`, positive-edge triggered. |
 | CR-02 | M | Reset `aresetn` shall be **active-low, asynchronously asserted, synchronously de-asserted**, per the reset synchroniser in `rtl/common/`. |
 | CR-03 | M | All architectural state (delay line, accumulator, FIFO pointers, FSM, CSRs) shall be reset to a defined value. No state shall rely on power-up randomness. |
-| CR-04 | M | The IP shall be functional and protocol-legal from the first clock edge after reset de-assertion. Specifically, `TREADY` on the input and `TVALID` on the output shall be deasserted throughout reset. |
+| CR-04 | M | The IP shall be functional and protocol-legal from the first clock edge after reset de-assertion. `m_axis_tvalid` shall be deasserted throughout reset, as AXI4-Stream requires of a master. **`s_axis_tready` is deliberately left unconstrained during reset** — see note below. |
 | CR-05 | M | Reset assertion during active streaming is architecturally legal and shall leave the IP in a clean idle state. Data in flight is discarded — this is documented behaviour, not data loss under FR-15, which applies only to reset-free operation. |
 | CR-06 | S | Phase 7: the control plane shall be moved to an independent `s_axi_aclk` domain, with a documented CDC strategy (`09_cdc_reset.md`). No unsafe synchronisers (no multi-bit buses through 2-flop synchronisers). |
 | CR-07 | S | Phase 7: control-plane→datapath configuration transfer shall use a request/acknowledge handshake with the multi-bit payload held stable, not per-bit synchronisation. |
 | CR-08 | N | Independent clock domains on the input and output stream interfaces via Gray-pointer asynchronous FIFOs. |
+
+> **Note on `TREADY` during reset (revised in Phase 2).** CR-04 originally required *both*
+> `s_axis_tready` and `m_axis_tvalid` to be low throughout reset. Phase 2 testing showed the RTL
+> drives `s_axis_tready` **high** during reset, because resetting the FIFO pointers makes the
+> buffer empty and `s_tready = !full`.
+>
+> The AXI4-Stream specification constrains only the master: `TVALID` must be low during reset, and
+> a master may not assert it until a rising edge after `ARESETn` is high. It places **no
+> requirement on `TREADY`**, precisely because a compliant master cannot present a beat for a high
+> `TREADY` to accept. Forcing `s_axis_tready` low would mean `s_tready = !full && rst_n`, putting
+> the reset net into the ready path — extra logic and an extra load on a timing-relevant signal,
+> purchasing nothing.
+>
+> The requirement was therefore wrong, not the RTL. It has been corrected rather than the design
+> changed to satisfy it. See engineering log D-018.
 
 ---
 

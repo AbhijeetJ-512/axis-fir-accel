@@ -5,13 +5,17 @@
 # tools. Nothing in this project reports a number that one of these targets did
 # not produce.
 #
-#   make regress    cocotb regression, default parameter set
-#   make sweep      regression across the supported parameter sets
-#   make elab       Yosys structural gate (latches / tri-states / loops)
-#   make elab-sweep the same gate across parameter sets
-#   make waves      regression with FST waveform dump
-#   make tools      report which tools are present
-#   make clean      remove simulation and synthesis artefacts
+#   make regress     both cocotb suites, default parameters
+#   make csr         Phase 1 control-plane suite only
+#   make stream      Phase 2 stream / flow-control suite only
+#   make sweep       both suites across their parameter sets
+#   make elab        Yosys structural gate (latches / tri-states / loops)
+#   make elab-sweep  the same gate across parameter sets
+#   make comb-check  structural proof of TR-04 on the elaborated netlist
+#   make check       everything above that gates a phase
+#   make waves       regression with FST waveform dump (SUITE=csr|stream)
+#   make tools       report which tools are present
+#   make clean       remove simulation and synthesis artefacts
 # -----------------------------------------------------------------------------
 
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
@@ -22,31 +26,58 @@ MAC_UNITS    ?= 8
 DATA_W       ?= 16
 COEF_W       ?= 16
 SYMMETRIC_EN ?= 1
+SUITE        ?= csr
 
-PARAMS := NTAPS_MAX=$(NTAPS_MAX) MAC_UNITS=$(MAC_UNITS) DATA_W=$(DATA_W) \
-          COEF_W=$(COEF_W) SYMMETRIC_EN=$(SYMMETRIC_EN)
+CSR_PARAMS := NTAPS_MAX=$(NTAPS_MAX) MAC_UNITS=$(MAC_UNITS) DATA_W=$(DATA_W) \
+              COEF_W=$(COEF_W) SYMMETRIC_EN=$(SYMMETRIC_EN)
 
-.PHONY: all regress sweep waves elab elab-sweep verify-widths tools clean help
+.PHONY: all check regress csr stream sweep csr-sweep stream-sweep waves \
+        elab elab-sweep comb-check verify-widths tools clean help
 
-all: regress elab
+all: check
+
+# Everything that gates a phase.
+check: regress elab-sweep comb-check verify-widths
 
 # --- Simulation --------------------------------------------------------------
-regress:
-	$(MAKE) -C $(COCOTB_DIR) $(PARAMS)
+regress: csr stream
+
+csr:
+	@echo "=== Phase 1 suite: AXI4-Lite control plane ==="
+	@$(MAKE) -s -C $(COCOTB_DIR) SUITE=csr $(CSR_PARAMS) 2>&1 \
+	  | grep -E "TESTS=|AssertionError" || true
+
+stream:
+	@echo "=== Phase 2 suite: AXI4-Stream path and flow control ==="
+	@$(MAKE) -s -C $(COCOTB_DIR) SUITE=stream 2>&1 \
+	  | grep -E "TESTS=|AssertionError|matched exactly" || true
 
 waves:
-	$(MAKE) -C $(COCOTB_DIR) $(PARAMS) WAVES=1
+	$(MAKE) -C $(COCOTB_DIR) SUITE=$(SUITE) WAVES=1
 	@echo "waveform: $(ROOT)/sim/build_*/dump.fst  (open with: gtkwave <file>)"
 
-# Parameter sets chosen to exercise the boundaries: the minimum useful tap
-# count, the default, the maximum that fills the coefficient region, and a
-# build with the symmetric datapath removed.
-sweep:
+sweep: csr-sweep stream-sweep
+
+# Boundaries: minimum useful tap count, the default, the value that exactly
+# fills the coefficient region, and a build with the symmetric path removed.
+csr-sweep:
 	@set -e; for cfg in "64 8 1" "32 4 1" "16 8 1" "128 16 1" "256 1 0"; do \
 	  set -- $$cfg; \
-	  echo "=== NTAPS_MAX=$$1 MAC_UNITS=$$2 SYMMETRIC_EN=$$3 ==="; \
-	  $(MAKE) -s -C $(COCOTB_DIR) NTAPS_MAX=$$1 MAC_UNITS=$$2 SYMMETRIC_EN=$$3 \
-	    2>&1 | grep -E "TESTS=|AssertionError" || true; \
+	  printf '%-44s ' "csr: NTAPS_MAX=$$1 MAC_UNITS=$$2 SYM=$$3"; \
+	  $(MAKE) -s -C $(COCOTB_DIR) SUITE=csr NTAPS_MAX=$$1 MAC_UNITS=$$2 SYMMETRIC_EN=$$3 \
+	    2>&1 | grep -oE "TESTS=[0-9]+ PASS=[0-9]+ FAIL=[0-9]+ SKIP=[0-9]+" | head -1; \
+	done
+
+# Boundaries: minimum legal FIFO depths, the default, a deep pipeline that
+# stresses the credit constraint OUT_FIFO_DEPTH > PIPE_DEPTH+1, and a narrow
+# datapath.
+stream-sweep:
+	@set -e; for cfg in "16 8 8 4" "16 2 4 2" "16 4 32 16" "8 8 8 1" "32 16 16 8"; do \
+	  set -- $$cfg; \
+	  printf '%-44s ' "stream: D=$$1 IN=$$2 OUT=$$3 PIPE=$$4"; \
+	  $(MAKE) -s -C $(COCOTB_DIR) SUITE=stream DATA_W=$$1 IN_FIFO_DEPTH=$$2 \
+	    OUT_FIFO_DEPTH=$$3 PIPE_DEPTH=$$4 LONG_BEATS=5000 \
+	    2>&1 | grep -oE "TESTS=[0-9]+ PASS=[0-9]+ FAIL=[0-9]+ SKIP=[0-9]+" | head -1; \
 	done
 
 # --- Structural checks -------------------------------------------------------
@@ -60,6 +91,9 @@ elab:
 
 elab-sweep:
 	@bash $(ROOT)/scripts/elab_sweep.sh
+
+comb-check:
+	@bash $(ROOT)/scripts/check_comb_independence.sh
 
 # --- Derivation check --------------------------------------------------------
 verify-widths:

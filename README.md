@@ -2,20 +2,22 @@
 
 **A programmable fixed-point FIR filter accelerator with AXI4-Stream data plane and AXI4-Lite control plane.**
 
-> **Project status: Phase 1 of 12 complete — AXI4-Lite control plane implemented and verified.**
-> The datapath does not exist yet. No performance, area, timing or power figure is claimed; every
-> such figure below is labelled **NOT YET MEASURED** and will be replaced only by a value read out
-> of a checked-in tool report.
+> **Project status: Phase 2 of 12 complete — control plane and stream flow control verified.**
+> The FIR arithmetic arrives in Phase 3. No area, timing or power figure is claimed; every such
+> figure below is labelled **NOT YET MEASURED** and will be replaced only by a value read out of a
+> checked-in tool report.
 
 ```
-$ make regress && make elab-sweep
+$ make check
+=== Phase 1 suite: AXI4-Lite control plane ===
 ** TESTS=16 PASS=16 FAIL=0 SKIP=0 **
-  PASS  NTAPS_MAX=64   MAC_UNITS=8   SYM=1
-  PASS  NTAPS_MAX=32   MAC_UNITS=4   SYM=1
-  PASS  NTAPS_MAX=256  MAC_UNITS=1   SYM=0
-  PASS  NTAPS_MAX=16   MAC_UNITS=8   SYM=1
-  PASS  NTAPS_MAX=128  MAC_UNITS=16  SYM=1
+=== Phase 2 suite: AXI4-Stream path and flow control ===
+100000 beats matched exactly | peak out_fifo=8/8 | 170957 cycles
+** TESTS=12 PASS=12 FAIL=0 SKIP=0 **
 elab_sweep: all configurations clean (no latches, no tri-states, no loops)
+self-test: direct-wire module = FOUND | through-a-flop module = clean
+  PASS  m_axis_tready -> s_axis_tready  (TR-04)     no combinational path
+RESULT: accumulator width derivation holds
 ```
 
 ---
@@ -74,6 +76,9 @@ Full detail: [`docs/02_architecture.md`](docs/02_architecture.md).
 | Feature | Status |
 |---|---|
 | AXI4-Lite CSRs, byte-strobed, with `SLVERR` policy and interrupt | **Implemented, verified** |
+| Elastic buffers; lossless, order-preserving, `TLAST`-aligned stream | **Implemented, verified** |
+| Credit-gated admission — output FIFO overflow structurally impossible | **Implemented, verified** |
+| Independent input/output backpressure, no combinational `TREADY` path | **Implemented, verified** |
 | Runtime-discoverable `CAPABILITY` register | **Implemented, verified** |
 | RW1C interrupt status with set-wins-over-clear | **Implemented, verified** |
 | Coefficient region decode with out-of-range rejection | **Implemented, verified** |
@@ -84,7 +89,6 @@ Full detail: [`docs/02_architecture.md`](docs/02_architecture.md).
 | Truncate / round-half-up / convergent rounding | Specified — Phase 3 |
 | Symmetric and asymmetric saturation with sticky status | Specified — Phase 3 |
 | Linear-phase symmetric-coefficient folding (halves multipliers) | Specified — Phase 3 |
-| Credit-gated, non-stalling pipeline; independent backpressure | Specified — Phase 2/4 |
 | Runtime coefficient reload via shadow bank, atomic at frame boundary | Specified — Phase 4 |
 | `MAC_UNITS` resource folding parameter | Specified — Phase 4 |
 | Dual-clock control/data split with proper CDC | Specified — Phase 7 |
@@ -101,8 +105,8 @@ Definition of Done.
 | [`00_project_plan.md`](docs/00_project_plan.md) | Repository layout, 12 phases, risks, toolchain | Complete |
 | [`01_requirements.md`](docs/01_requirements.md) | Tiered requirements (MUST/SHOULD/NICE) | Complete |
 | [`02_architecture.md`](docs/02_architecture.md) | Blocks, dataflow, flow control, reset, bottlenecks | Complete |
-| [`engineering_log.md`](docs/engineering_log.md) | Every decision with options and tradeoffs (D-001…D-017) | Live |
-| [`04_interfaces.md`](docs/04_interfaces.md) | Signal tables, register map, driver sequence | Complete for AXI4-Lite |
+| [`engineering_log.md`](docs/engineering_log.md) | Every decision with options and tradeoffs (D-001…D-021) | Live |
+| [`04_interfaces.md`](docs/04_interfaces.md) | Signal tables, register map, driver sequence, stream contract | Complete for both interfaces |
 | `03_microarchitecture.md` | RTL-level block detail, pipeline, corner cases | Phase 4 |
 | `05_fixed_point.md` | Numerical model, derivations, equations | Phase 3 |
 | `06_verification_plan.md` | Strategy, verification matrix | Phase 5 |
@@ -142,13 +146,15 @@ Standard-cell libraries: **Nangate45** (primary) and **Sky130HD** (portability d
 Working today:
 
 ```bash
+make check           # everything that gates a phase (the block quoted above)
 make tools           # report which tools are present
-make regress         # cocotb regression (16 tests, default parameters)
-make sweep           # regression across 5 parameter sets
-make elab            # Yosys structural gate: latches / tri-states / loops
-make elab-sweep      # the same gate across 5 parameter sets
+make regress         # both cocotb suites
+make csr / stream    # one suite at a time
+make sweep           # both suites across their parameter sets
+make elab-sweep      # Yosys structural gate across parameter sets
+make comb-check      # structural proof of TR-04 on the elaborated netlist
 make verify-widths   # executable proof of the accumulator derivation
-make waves           # regression with an FST dump for GTKWave
+make waves SUITE=stream   # regression with an FST dump for GTKWave
 ```
 
 Requires `iverilog`, `yosys`, `python3` and `pip install cocotb`.
@@ -164,10 +170,15 @@ Planned for later phases: `make lint` (Verilator), `make synth` (Yosys → Nanga
 
 | Result | Value | Evidence |
 |---|---|---|
-| Control-plane regression | 16/16 tests pass, 5 parameter sets | `make sweep` |
-| Inferred latches / tri-states / combinational loops | **0**, all 5 configurations | `synthesis/reports/elab_*.log` |
+| Control-plane regression | 16/16 tests, 5 parameter sets | `make csr-sweep` |
+| Stream regression | 12/12 tests, 5 FIFO/pipe configurations | `make stream-sweep` |
+| Lossless streaming | **100 000 beats**, exact sequence + `TLAST` match | `make stream` |
+| Sustained throughput | **II = 1.000** under continuous streaming | `test_continuous_stream_ii1` |
+| Credit invariant | output FIFO **never** written while full | per-cycle checker, every test |
+| Protocol violations (AXI4-Lite + AXI4-Stream) | **0** | monitors active in every test |
+| TR-04: `m_axis_tready` → `s_axis_tready` | **no combinational path** | `make comb-check` (self-testing) |
+| Inferred latches / tri-states / comb. loops | **0**, all 5 configurations | `synthesis/reports/elab_*.log` |
 | Accumulator width derivation | sufficient **and** minimal, `NTAPS_MAX` 4…256 | `make verify-widths` |
-| AXI4-Lite protocol violations | **0** (monitor active in every test) | `tb/cocotb/env/axil_driver.py` |
 
 **Not yet measured** — the datapath does not exist until Phase 3:
 

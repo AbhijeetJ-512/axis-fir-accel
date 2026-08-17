@@ -21,6 +21,8 @@ read_verilog -sv -I rtl/common \
     rtl/common/fir_pkg.sv \
     rtl/common/reset_sync.sv \
     rtl/axi_lite/axil_slave.sv \
+    rtl/axi_stream/axis_fifo.sv \
+    rtl/control/credit_ctr.sv \
     rtl/control/csr_regfile.sv
 
 # Elaborate every module standalone so that an unused module cannot hide a bug.
