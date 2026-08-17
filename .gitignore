@@ -1,0 +1,27 @@
+# Simulation artefacts
+sim/*
+!sim/.gitkeep
+*.vcd
+*.fst
+*.vvp
+results.xml
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Verilator
+obj_dir/
+
+# Synthesis / STA intermediates (reports/ ARE checked in — see docs/00_project_plan.md)
+*.blif
+*.json
+synthesis/*.log
+sta/*.log
+
+# Formal
+formal/*/
+!formal/*.sby
+
+# Editor
+.vscode/
+*.swp
