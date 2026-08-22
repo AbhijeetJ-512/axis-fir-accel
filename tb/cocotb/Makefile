@@ -99,8 +99,39 @@ ifeq ($(SUITE),fir)
   CFG_TAG := fir_d$(DATA_W)_c$(COEF_W)_n$(NTAPS_MAX)_s$(SYMMETRIC_EN)
 endif
 
+# ---- Suite: top (Phase 4 full integration) ----------------------------------
+ifeq ($(SUITE),top)
+  DATA_W         ?= 16
+  COEF_W         ?= 16
+  NTAPS_MAX      ?= 32
+  MAC_UNITS      ?= 8
+  IN_FIFO_DEPTH  ?= 8
+  OUT_FIFO_DEPTH ?= 16
+  SYMMETRIC_EN   ?= 1
+  export DATA_W COEF_W NTAPS_MAX MAC_UNITS OUT_FIFO_DEPTH SYMMETRIC_EN
+
+  TOPLEVEL := axis_fir_top
+  MODULE   ?= tests.test_top
+  VERILOG_SOURCES := $(COMMON_SOURCES) \
+      $(RTL)/axi_lite/axil_slave.sv $(RTL)/axi_stream/axis_fifo.sv \
+      $(RTL)/control/credit_ctr.sv $(RTL)/control/csr_regfile.sv \
+      $(RTL)/control/fir_ctrl.sv $(RTL)/mem/coeff_bank.sv \
+      $(RTL)/dsp/delay_line.sv $(RTL)/dsp/mac_array.sv \
+      $(RTL)/dsp/acc_reduce.sv $(RTL)/dsp/round_sat.sv $(RTL)/dsp/fir_core.sv \
+      $(RTL)/top/axis_fir_top.sv
+  PARAM_ARGS := \
+      -P$(TOPLEVEL).DATA_W=$(DATA_W) \
+      -P$(TOPLEVEL).COEF_W=$(COEF_W) \
+      -P$(TOPLEVEL).NTAPS_MAX=$(NTAPS_MAX) \
+      -P$(TOPLEVEL).MAC_UNITS=$(MAC_UNITS) \
+      -P$(TOPLEVEL).IN_FIFO_DEPTH=$(IN_FIFO_DEPTH) \
+      -P$(TOPLEVEL).OUT_FIFO_DEPTH=$(OUT_FIFO_DEPTH) \
+      -P$(TOPLEVEL).SYMMETRIC_EN=$(SYMMETRIC_EN)
+  CFG_TAG := top_n$(NTAPS_MAX)_m$(MAC_UNITS)_o$(OUT_FIFO_DEPTH)_s$(SYMMETRIC_EN)
+endif
+
 ifndef TOPLEVEL
-  $(error Unknown SUITE '$(SUITE)'. Use SUITE=csr, SUITE=stream or SUITE=fir)
+  $(error Unknown SUITE '$(SUITE)'. Use SUITE=csr, stream, fir or top)
 endif
 
 # ---- Tool arguments ---------------------------------------------------------

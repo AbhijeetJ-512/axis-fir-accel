@@ -10,6 +10,8 @@
 #   make stream      Phase 2 stream / flow-control suite only
 #   make fir         Phase 3 FIR arithmetic suite only
 #   make fir-full    the >=1M-sample Definition-of-Done run (minutes)
+#   make top         Phase 4 full-IP integration suite
+#   make fold-sweep  bit-identity across every MAC_UNITS (risk R3)
 #   make sweep       both suites across their parameter sets
 #   make elab        Yosys structural gate (latches / tri-states / loops)
 #   make elab-sweep  the same gate across parameter sets
@@ -53,7 +55,7 @@ SUITE        ?= csr
 CSR_PARAMS := NTAPS_MAX=$(NTAPS_MAX) MAC_UNITS=$(MAC_UNITS) DATA_W=$(DATA_W) \
               COEF_W=$(COEF_W) SYMMETRIC_EN=$(SYMMETRIC_EN)
 
-.PHONY: all check regress csr stream fir fir-full sweep csr-sweep stream-sweep waves \
+.PHONY: all check regress csr stream fir fir-full top fold-sweep sweep csr-sweep stream-sweep waves \
         elab elab-sweep comb-check verify-widths verify-model tools clean help
 
 all: check
@@ -62,7 +64,7 @@ all: check
 check: regress elab-sweep comb-check verify-widths verify-model
 
 # --- Simulation --------------------------------------------------------------
-regress: csr stream fir
+regress: csr stream fir top
 
 csr:
 	@echo "=== Phase 1 suite: AXI4-Lite control plane ==="
@@ -88,6 +90,22 @@ fir-full:
 	@$(MAKE) -s -C $(COCOTB_DIR) SUITE=fir NTAPS_MAX=$(NTAPS_MAX) \
 	  RAND_SETS=20 RAND_LEN=50000 2>&1 \
 	  | grep -E "TESTS=|AssertionError|BIT-EXACT|peak \|" || true
+
+top:
+	@echo "=== Phase 4 suite: full IP integration, MAC_UNITS=$(MAC_UNITS) ==="
+	@$(MAKE) -s -C $(COCOTB_DIR) SUITE=top NTAPS_MAX=32 MAC_UNITS=$(MAC_UNITS) 2>&1 \
+	  | grep -E "TESTS=|AssertionError|BIT-EXACT|II:|bit-identical" || true
+
+# Risk R3: in a folded configuration the delay line must shift once per OUTPUT
+# SAMPLE, not once per pass. Every MAC_UNITS must give results bit-identical to
+# the MAC_UNITS-independent reference model -- which implies they match each
+# other. This is the single highest-value test in the project.
+fold-sweep:
+	@set -e; for m in 1 2 4 8 16 32; do \
+	  printf '%-34s ' "MAC_UNITS=$$m"; \
+	  $(MAKE) -s -C $(COCOTB_DIR) SUITE=top NTAPS_MAX=32 MAC_UNITS=$$m 2>&1 \
+	    | grep -oE "TESTS=[0-9]+ PASS=[0-9]+ FAIL=[0-9]+ SKIP=[0-9]+" | head -1; \
+	done
 
 waves:
 	$(MAKE) -C $(COCOTB_DIR) SUITE=$(SUITE) WAVES=1

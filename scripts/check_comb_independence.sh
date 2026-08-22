@@ -26,10 +26,16 @@
 set -u
 cd "$(dirname "$0")/.." || exit 1
 
-TOP="axis_loopback_wrap"
+# The real deliverable top level, not the Phase 2 loopback wrapper: the
+# property has to hold for the IP that ships, with the full control plane and
+# datapath present.
+TOP="axis_fir_top"
 SOURCES="rtl/common/fir_pkg.sv rtl/common/reset_sync.sv \
-         rtl/axi_stream/axis_fifo.sv rtl/control/credit_ctr.sv \
-         tb/sv/axis_loopback_wrap.sv"
+         rtl/axi_lite/axil_slave.sv rtl/axi_stream/axis_fifo.sv \
+         rtl/control/credit_ctr.sv rtl/control/csr_regfile.sv \
+         rtl/control/fir_ctrl.sv rtl/mem/coeff_bank.sv \
+         rtl/dsp/delay_line.sv rtl/dsp/mac_array.sv rtl/dsp/acc_reduce.sv \
+         rtl/dsp/round_sat.sv rtl/dsp/fir_core.sv rtl/top/axis_fir_top.sv"
 
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
@@ -102,6 +108,11 @@ check "m_axis_tready -> s_axis_tready  (TR-04)"  s_axis_tready  m_axis_tready
 # an unbounded combinational path across a stream pipeline.
 check "s_axis_tvalid -> m_axis_tvalid  (no feedthrough)" m_axis_tvalid s_axis_tvalid
 check "s_axis_tdata  -> m_axis_tdata   (no feedthrough)" m_axis_tdata  s_axis_tdata
+# The control plane must not create a back door between the two stream
+# interfaces either, and AXI4-Lite readies must not depend on stream state.
+check "m_axis_tready -> s_axil_awready (cross-plane)"    s_axil_awready m_axis_tready
+check "s_axil_bready -> s_axil_awready (AXI4-Lite TR-04)" s_axil_awready s_axil_bready
+check "s_axil_rready -> s_axil_arready (AXI4-Lite TR-04)" s_axil_arready s_axil_rready
 
 echo
 if [ $fail -eq 0 ]; then

@@ -822,4 +822,106 @@ follow-up rather than papered over.
 
 ---
 
-*Entries D-027 onward will be added during Phase 4.*
+## D-027 — `out_valid` derived from the control chain, not a fixed-depth pipe
+
+**2026-08-17 · Phase 4**
+
+**Problem.** Folding makes latency configuration-dependent: `LATENCY = 5 + clog2(MAC_UNITS) +
+(P-1)`, and `P = ceil(N_eff/MAC_UNITS)` depends on `CFG.NTAPS` and `CFG.SYMMETRIC`, both runtime
+values. The Phase 3 core carried `valid`/`last` in a shift register of exactly the pipeline
+depth, which cannot express a latency that changes with configuration.
+
+**Options considered.**
+1. Size the shadow pipe for the worst case `P_MAX` and always take that long — fixed, but throws
+   away throughput at every configuration except the slowest.
+2. Select a tap of the shadow pipe based on `P` — a runtime-indexed read of a control pipe;
+   works, but puts an arithmetic dependency in the control path for no gain.
+3. Carry a control *record* through exactly the datapath's delay and derive `out_valid` from it.
+
+**Decision.** Option 3. The pass record `{vld, first, last, tlast}` is shifted through
+`DLY = 2 + LEVELS` stages, so each pass's record emerges aligned with that pass's adder-tree
+output. `out_valid` follows `acc_last`.
+
+**Reason.** Latency then tracks configuration with no arithmetic at all, any number of samples
+may be in flight without a side FIFO to keep them in step, and `TLAST` rides beside its own
+sample so it cannot drift. The control path and the datapath share one delay constant, which is
+also the only thing a reviewer has to check.
+
+**Tradeoffs.** A system integrator cannot assume a constant latency. Documented exactly in
+`03_microarchitecture.md` §3 rather than left to be discovered.
+
+---
+
+## D-028 — Gating the coefficient as well as the operand: `0 * X` is `X`
+
+**2026-08-17 · Phase 4**
+
+**Problem.** The first full-integration run produced a DUT output of `-1` where the model
+expected `-13684`. `-1` is what the testbench's `_to_int` helper returns for an **X** — so the
+output was undefined, not merely wrong.
+
+**Root cause.** Coefficient storage is deliberately never reset (D-009), and software writes only
+the `NTAPS` taps it actually uses, so entries at and above `NTAPS` legitimately hold X.
+`fir_core` reads `MAC_UNITS` coefficients every pass, including indices past `NTAPS` on the final
+pass. The operand for those inactive taps was already forced to zero — **and that is not enough**:
+in Verilog `0 * X` evaluates to `X`, not `0`. The X propagated into the adder tree and took the
+whole output with it.
+
+**Decision.** Gate **both** multiplier operands with `active`.
+
+**Reason.** It makes the datapath immune to the storage policy the architecture deliberately
+chose. The alternative — requiring software to write all `NTAPS_MAX` coefficients — would push a
+hardware detail into the driver and contradict the documented register semantics.
+
+**Tradeoffs.** One extra AND per coefficient bit. Negligible, and it removes a whole class of
+X-propagation failure.
+
+**Worth keeping.** This bug is invisible to inspection and invisible in a testbench that
+initialises its memories. It surfaced only because the integration test drove a *real software
+configuration sequence* against *unreset* storage — which is what the hardware will actually see.
+
+---
+
+## D-029 — Risk R3 closed by construction of the test, not by assertion
+
+**2026-08-17 · Phase 4**
+
+**Problem.** In a folded configuration the delay line must advance once per **output sample**,
+not once per pass. A per-pass shift yields a filter that streams correctly, violates no protocol,
+sets no status bit, passes every handshake and losslessness check — and returns numerically wrong
+data. No protocol-layer check can see it.
+
+**Options considered.** An SVA property relating `shift_en` to `pass_last`; a directed test with
+hand-computed expected values; requiring bit-identity against a fold-agnostic reference model.
+
+**Decision.** The third. Every `MAC_UNITS` build is required to match the same Python reference
+model, which knows nothing about folding at all.
+
+**Reason.** An assertion would only restate the implementation in another notation — if the
+schedule is misunderstood, the assertion will be written with the same misunderstanding. A
+reference model that has no concept of passes cannot share the bug. Agreement therefore means the
+schedule is right, not that two expressions of the same idea agree.
+
+**Result.** `MAC_UNITS ∈ {1, 2, 4, 8, 16, 32}` at `NTAPS_MAX = 32`, all 7 tests pass in every
+build. Measured II matches `ceil(N_eff/MAC_UNITS)` exactly: 4.027 vs 4, 2.027 vs 2, 1.028 vs 1.
+
+---
+
+## D-030 — Test bug: resetting the model without flushing the DUT
+
+**2026-08-17 · Phase 4**
+
+**Problem.** Every configuration after the first mismatched. The integration test called
+`ref.reset()` between configurations but never flushed the DUT's delay line, so a zero-padded
+expectation was compared against real carried-over history.
+
+**Decision.** `configure()` now issues `CTRL.FLUSH` before reconfiguring.
+
+**Worth recording** because of how it presented: identical in appearance to an RTL fault, and
+adjacent to a genuine RTL fault (D-028) found in the same run. The two were separated by reading
+the failing values rather than by re-running — `-1` meant X and pointed at the RTL; a plausible
+but wrong number meant stale state and pointed at the testbench.
+
+---
+
+*Entries D-031 onward will be added during Phase 5.*

@@ -34,11 +34,16 @@ for cfg in "${CONFIGS[@]}"; do
         rtl/axi_lite/axil_slave.sv rtl/axi_stream/axis_fifo.sv \
         rtl/control/credit_ctr.sv rtl/control/csr_regfile.sv \
         rtl/dsp/delay_line.sv rtl/dsp/mac_array.sv rtl/dsp/acc_reduce.sv \
-        rtl/dsp/round_sat.sv rtl/dsp/fir_core.sv
+        rtl/dsp/round_sat.sv rtl/dsp/fir_core.sv \
+        rtl/control/fir_ctrl.sv rtl/mem/coeff_bank.sv rtl/top/axis_fir_top.sv
     chparam -set NTAPS_MAX ${NT} -set MAC_UNITS ${MU} \
             -set DATA_W ${DW} -set COEF_W ${CW} -set SYMMETRIC_EN ${SE} csr_regfile
     chparam -set DATA_W ${DW} -set COEF_W ${CW} -set NTAPS_MAX ${NT} \
-            -set SYMMETRIC_EN ${SE} fir_core
+            -set SYMMETRIC_EN ${SE} -set MAC_UNITS ${MU} fir_core
+    chparam -set NTAPS_MAX ${NT} -set MAC_UNITS ${MU} fir_ctrl
+    chparam -set NTAPS_MAX ${NT} -set COEF_W ${CW} coeff_bank
+    chparam -set DATA_W ${DW} -set COEF_W ${CW} -set NTAPS_MAX ${NT} \
+            -set MAC_UNITS ${MU} -set SYMMETRIC_EN ${SE} axis_fir_top
     hierarchy -check
     proc
     opt_expr
