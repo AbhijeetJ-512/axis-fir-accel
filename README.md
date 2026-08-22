@@ -2,10 +2,10 @@
 
 **A programmable fixed-point FIR filter accelerator with AXI4-Stream data plane and AXI4-Lite control plane.**
 
-> **Project status: Phase 3 of 12 complete — control plane, stream flow control and FIR
-> arithmetic all verified.** Resource folding is Phase 4. No area, timing or power figure is
-> claimed; every such figure below is labelled **NOT YET MEASURED** and will be replaced only by a
-> value read out of a checked-in tool report.
+> **Project status: Phase 4 of 12 complete — the IP is functionally complete and verified
+> end to end.** Remaining phases are verification closure, formal, CDC, synthesis, STA and PPA.
+> No area, timing or power figure is claimed; every such figure below is labelled
+> **NOT YET MEASURED** and will be replaced only by a value read out of a checked-in tool report.
 
 ```
 $ make check
@@ -40,9 +40,11 @@ Three things, and they are the reason the project exists:
    downstream block.
 
 3. **One parameter changes the microarchitecture.**
-   `MAC_UNITS` folds the datapath continuously from 1 multiplier (`II = N`) to `N/2` multipliers
-   (`II = 1`) with no source edit. The resulting area/frequency/throughput curve is the project's
-   headline engineering result — measured across two standard-cell libraries, not asserted.
+   `MAC_UNITS` folds the datapath from 1 multiplier (`II = N`) to `N/2` multipliers (`II = 1`)
+   with no source edit — and all six fold factors are **bit-identical** to a reference model that
+   has no concept of folding. Measured `II` matches `ceil(N_eff/MAC_UNITS)` exactly. The
+   resulting area/frequency/throughput curve is the project's headline engineering result;
+   the PPA half of it is **NOT YET MEASURED** (Phase 10).
 
 And one commitment: **every number in this README will be reproducible by a command you can run**,
 using only open-source tools, on a stock Linux machine.
@@ -90,8 +92,9 @@ Full detail: [`docs/02_architecture.md`](docs/02_architecture.md).
 | Symmetric and asymmetric saturation with sticky status | **Implemented, verified** |
 | Linear-phase symmetric pre-adder, incl. odd-length centre tap | **Implemented, verified** |
 | `SYMMETRIC_EN=0` build omits the pre-adder and mirror mux entirely | **Implemented, verified** |
-| Runtime coefficient reload via shadow bank, atomic at frame boundary | Specified — Phase 4 |
-| `MAC_UNITS` resource folding parameter | Specified — Phase 4 |
+| Runtime coefficient reload via shadow bank, atomic at frame boundary | **Implemented, verified** |
+| `MAC_UNITS` resource folding, `II = ceil(N_eff/MAC_UNITS)` | **Implemented, verified** |
+| `IDLE/RUN/DRAIN/CFGERR` FSM; graceful stop loses no samples | **Implemented, verified** |
 | Dual-clock control/data split with proper CDC | Specified — Phase 7 |
 
 See [`docs/00_project_plan.md`](docs/00_project_plan.md) for the phase plan and each phase's
@@ -106,9 +109,9 @@ Definition of Done.
 | [`00_project_plan.md`](docs/00_project_plan.md) | Repository layout, 12 phases, risks, toolchain | Complete |
 | [`01_requirements.md`](docs/01_requirements.md) | Tiered requirements (MUST/SHOULD/NICE) | Complete |
 | [`02_architecture.md`](docs/02_architecture.md) | Blocks, dataflow, flow control, reset, bottlenecks | Complete |
-| [`engineering_log.md`](docs/engineering_log.md) | Every decision with options and tradeoffs (D-001…D-025) | Live |
+| [`engineering_log.md`](docs/engineering_log.md) | Every decision with options and tradeoffs (D-001…D-030) | Live |
 | [`04_interfaces.md`](docs/04_interfaces.md) | Signal tables, register map, driver sequence, stream contract | Complete for both interfaces |
-| `03_microarchitecture.md` | RTL-level block detail, pipeline, corner cases | Phase 4 |
+| [`03_microarchitecture.md`](docs/03_microarchitecture.md) | Fold schedule, pipeline, FSM, corner cases | Complete |
 | [`05_fixed_point.md`](docs/05_fixed_point.md) | Numerical model, derivations, equations | Complete |
 | `06_verification_plan.md` | Strategy, verification matrix | Phase 5 |
 | `07_testbench_architecture.md` | TB components, UVM justification | Phase 5 |
@@ -150,7 +153,9 @@ Working today:
 make check           # everything that gates a phase (the block quoted above)
 make tools           # report which tools are present
 make regress         # both cocotb suites
-make csr / stream / fir   # one suite at a time
+make csr / stream / fir / top   # one suite at a time
+make fold-sweep      # bit-identity across every MAC_UNITS (risk R3)
+make fir-full        # the >=1M-sample arithmetic DoD run
 make sweep           # both suites across their parameter sets
 make elab-sweep      # Yosys structural gate across parameter sets
 make comb-check      # structural proof of TR-04 on the elaborated netlist
@@ -185,6 +190,12 @@ Planned for later phases: `make lint` (Verilator), `make synth` (Yosys → Nanga
 | Pipeline latency | **10 cycles** at 64 taps = `4 + clog2(64)`, measured not assumed | `test_latency_and_widths` |
 | Symmetric ≡ asymmetric, N = 1…64 odd and even | bit-identical | `test_symmetric_identity` |
 | Reference model vs float convolution | worst **0.4999 LSB** = the exact bound for correct rounding | `make verify-model` |
+| **Phase 3 DoD** | **1 000 000 samples**, 20 coefficient sets, 6 mode pairs — **bit-exact** | `make fir-full` |
+| **Risk R3 gate** | `MAC_UNITS` ∈ {1,2,4,8,16,32} all bit-identical to a fold-agnostic model | `make fold-sweep` |
+| Measured initiation interval | 4.027 vs predicted 4 · 2.027 vs 2 · 1.028 vs 1 | `make top` |
+| Coefficient swap timing | spanning frame keeps OLD coefficients; next frame uses new | `test_coefficient_swap_at_frame_boundary` |
+| Graceful stop | beats out == `SAMPLE_CNT` exactly when `ENABLE` drops mid-stream | `test_drain_loses_nothing` |
+| TR-04 on the **shipping** top level | 6 properties, no combinational path | `make comb-check` |
 
 **Not yet measured** — the datapath does not exist until Phase 3:
 
