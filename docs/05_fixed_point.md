@@ -301,3 +301,25 @@ a 1M-sample run at about eight hours. The arithmetic under test does not depend 
 except through `ACC_W` and the array size — every rounding, saturation, symmetry and tap-count
 path is exercised identically at 16 taps — so the split is a simulator constraint, not a coverage
 gap. Both figures are always reported with their tap count attached. See engineering log D-026.
+
+
+---
+
+## 8. Phase 3 Design Review
+
+Answering the section-24 questions for the arithmetic datapath.
+
+| Question | Answer |
+|---|---|
+| **What could fail?** | The symmetric centre tap (odd `N`, `N-1-k == k`) — targeted directly and shown bit-identical for N = 1…64. The `far_idx` mux underflowing when `g >= cfg_ntaps`; safe because `active` gates the operand to zero and, inside the active range, `g ≤ H-1 ≤ N-1`. Rounding of negative values, where `>>>` must be floor and the guard bit must come from the pre-shift value. |
+| **What assumptions are made?** | Coefficients are static for the duration of a computation (true until Phase 4 adds the shadow-bank swap). `in_valid` implies a sample admitted by the credit counter, so the pipeline is never asked to stall. `SHIFT ≥ 2`, checked at elaboration. |
+| **Where is the critical path?** | **NOT YET MEASURED.** Predicted: multiplier → first adder-tree level. The Phase 3 simulation-speed study (D-026) says nothing about this — simulator cost and gate delay are different quantities, and the mux hypothesis it refuted was about the former. Phase 9 measures the real one. |
+| **Where can data be lost?** | Nowhere in this block: it is a fixed-latency feed-forward pipe with no enables and no handshaking. The valid/last shadow pipe is exactly `LATENCY` deep, so `TLAST` cannot drift from its sample. |
+| **Where can backpressure deadlock?** | Not applicable — `fir_core` has no backpressure input by design. Flow control lives entirely in the credit counter proved in Phase 2. |
+| **What happens during reset?** | Delay line zeroed (FR-04 requires it, unlike the coefficient banks). Pipeline registers and the valid pipe cleared, so no stale sample emerges. |
+| **Malformed configuration?** | `RND_RESERVED` maps to `inc = 0` in the `default` arm. It is unreachable in practice — `CFG_ERR` blocks the FSM — but the arm exists because omitting it would infer a latch, which is worse than a defensive default. |
+| **Numerical overflow?** | Impossible in the accumulator, by a derivation that is *proved statically* (`verify_acc_width.py`, sufficient **and** minimal, both datapaths) and *confirmed dynamically* (peak reaches exactly the predicted `2³⁶` and never exceeds it). Possible only in `round_sat`, where it saturates and raises a sticky flag. |
+| **Maximum throughput?** | One sample per cycle; the datapath has no data-dependent behaviour whatsoever, so timing is value-independent by construction. |
+| **What would a senior RTL reviewer criticise?** | (a) `NMAC = NTAPS_MAX` means 64 multipliers in the default build — expensive, and the whole point of Phase 4 folding. (b) One register per adder-tree level is flop-heavy; registering every *second* level halves the flops at twice the logic depth, and is a named Phase 10 experiment. (c) The runtime-variable mirror mux is an O(N²) structure; now removable via `SYMMETRIC_EN`, but still present when the feature is wanted. All three are acknowledged with a plan, not hidden. |
+| **What would a verification engineer ask for?** | A reference model that is bit-exact rather than tolerance-based — provided, and itself cross-checked against float (`verify_ref_model.py`, worst 0.4999 LSB). Proof that the rounding modes are actually distinguishable — provided (`test_rounding_modes_differ`). Visibility of the accumulator — provided via `dbg_acc`. |
+| **What would a synthesis engineer complain about?** | The 38-bit adder tree if it were unpipelined (it is not — one register per level). The O(N²) mux (now optional). The unreset coefficient path (deliberate, D-009). |
