@@ -15,7 +15,8 @@
 module fir_core_wrap #(
   parameter int DATA_W    = 16,
   parameter int COEF_W    = 16,
-  parameter int NTAPS_MAX = 64
+  parameter int NTAPS_MAX = 64,
+  parameter bit SYMMETRIC_EN = 1'b1
 ) (
   input  logic                            clk,
   input  logic                            arst_n,
@@ -45,7 +46,7 @@ module fir_core_wrap #(
   reset_sync #(.STAGES(2)) u_rst (.clk (clk), .arst_n (arst_n), .rst_n (rst_n));
 
   fir_core #(
-    .DATA_W (DATA_W), .COEF_W (COEF_W), .NTAPS_MAX (NTAPS_MAX)
+    .DATA_W (DATA_W), .COEF_W (COEF_W), .NTAPS_MAX (NTAPS_MAX), .SYMMETRIC_EN (SYMMETRIC_EN)
   ) u_core (
     .clk (clk), .rst_n (rst_n), .clear (clear),
     .cfg_ntaps (cfg_ntaps), .cfg_round_mode (cfg_round_mode),

@@ -37,7 +37,8 @@ for cfg in "${CONFIGS[@]}"; do
         rtl/dsp/round_sat.sv rtl/dsp/fir_core.sv
     chparam -set NTAPS_MAX ${NT} -set MAC_UNITS ${MU} \
             -set DATA_W ${DW} -set COEF_W ${CW} -set SYMMETRIC_EN ${SE} csr_regfile
-    chparam -set DATA_W ${DW} -set COEF_W ${CW} -set NTAPS_MAX ${NT} fir_core
+    chparam -set DATA_W ${DW} -set COEF_W ${CW} -set NTAPS_MAX ${NT} \
+            -set SYMMETRIC_EN ${SE} fir_core
     hierarchy -check
     proc
     opt_expr

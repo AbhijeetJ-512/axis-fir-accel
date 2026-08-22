@@ -766,4 +766,60 @@ case statement without a default would infer a latch, which is worse.
 
 ---
 
-*Entries D-026 onward will be added during Phase 4.*
+## D-026 — Simulation speed of the fully-parallel datapath: hypothesis raised, measured, refuted
+
+**2026-08-17 · Phase 3**
+
+**Problem.** The Phase 3 suite at `NTAPS_MAX = 64` took **784 seconds for 31 227 cycles — about
+40 cycles/second**. At that rate the ≥1M-sample Definition-of-Done run would take roughly eight
+hours, which makes it effectively unrunnable and would push people to skip the regression.
+
+**Measured scaling** (identical stimulus, varying only `NTAPS_MAX`):
+
+| `NTAPS_MAX` | rate | change per doubling |
+|---|---|---|
+| 8 | 662 cyc/s | — |
+| 16 | 525 cyc/s | 1.3× slower |
+| 32 | 200 cyc/s | 2.6× slower |
+| 64 | 36 cyc/s | **5.6× slower** |
+
+Superlinear, and sharply so at the top.
+
+**Hypothesis.** The superlinearity looked like the O(N²) structure in the design: `NTAPS_MAX`
+instances each selecting one of `NTAPS_MAX` taps at a runtime index, for the symmetric mirror
+tap. At N=64 that is 4096 select paths. `02_architecture.md` §9 had independently predicted this
+mux as the third-most-likely critical path, so the two suspicions reinforced each other.
+
+**Test.** Gate the mirror mux out entirely at elaboration and re-measure the same stimulus.
+
+**Result — the hypothesis was WRONG.** Removing the mux gained only 13% (34.1 → 38.4 cyc/s).
+The cost is spread across the whole 64-wide datapath — 64 multipliers, a 63-node 38-bit adder
+tree, a 64×16 shift register — not concentrated in any one structure. Recorded here rather than
+quietly dropped: the prediction in the architecture document now has a measurement against it,
+and a wrong prediction with evidence is worth more than a vague one.
+
+*(This says nothing yet about the hardware critical path. Simulation cost and gate delay are
+different quantities; Phase 9 measures the real one, and the §9 prediction stands until then.)*
+
+**What the experiment did find.** `fir_core` ignored `SYMMETRIC_EN` altogether — it always built
+the pre-adder and the mirror mux, regardless. Requirement **PR-08** specifies that when
+`SYMMETRIC_EN = 0` the symmetric path is not synthesised and `CFG.SYMMETRIC` is tied off. The
+parameter existed in the specification and in `csr_regfile`, and the datapath simply did not
+honour it. Now implemented, and `test_symmetric_identity` asserts that a `SYMMETRIC_EN=0` build
+genuinely ignores the `cfg_symmetric` pin rather than merely being untested on it.
+
+**Decision on the DoD run.** The arithmetic under test does not depend on `NTAPS_MAX` except
+through `ACC_W` and the array size; every rounding, saturation, symmetry and tap-count path is
+exercised identically at 16 taps. The ≥1M-sample run is therefore executed at `NTAPS_MAX = 16`,
+with the full 64-wide datapath covered separately by the complete 12-test suite. **Both figures
+are reported with their tap count attached** — "1M samples" without saying at what width would be
+the kind of unqualified claim this project exists to avoid.
+
+**Tradeoffs.** A reviewer may reasonably want ≥1M samples at full width. The honest answer is
+that Icarus cannot deliver it in reasonable time; Verilator (Phase 6) is perhaps 10–100× faster
+on this kind of datapath and is the right tool to revisit it with. Recorded as a Phase 6
+follow-up rather than papered over.
+
+---
+
+*Entries D-027 onward will be added during Phase 4.*

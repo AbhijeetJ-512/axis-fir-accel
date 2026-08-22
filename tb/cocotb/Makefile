@@ -79,9 +79,10 @@ ifeq ($(SUITE),fir)
   DATA_W    ?= 16
   COEF_W    ?= 16
   NTAPS_MAX ?= 64
+  SYMMETRIC_EN ?= 1
   RAND_SETS ?= 20
   RAND_LEN  ?= 1200
-  export DATA_W COEF_W NTAPS_MAX RAND_SETS RAND_LEN
+  export DATA_W COEF_W NTAPS_MAX SYMMETRIC_EN RAND_SETS RAND_LEN
 
   TOPLEVEL := fir_core_wrap
   MODULE   ?= tests.test_fir_math
@@ -93,8 +94,9 @@ ifeq ($(SUITE),fir)
   PARAM_ARGS := \
       -P$(TOPLEVEL).DATA_W=$(DATA_W) \
       -P$(TOPLEVEL).COEF_W=$(COEF_W) \
-      -P$(TOPLEVEL).NTAPS_MAX=$(NTAPS_MAX)
-  CFG_TAG := fir_d$(DATA_W)_c$(COEF_W)_n$(NTAPS_MAX)
+      -P$(TOPLEVEL).NTAPS_MAX=$(NTAPS_MAX) \
+      -P$(TOPLEVEL).SYMMETRIC_EN=$(SYMMETRIC_EN)
+  CFG_TAG := fir_d$(DATA_W)_c$(COEF_W)_n$(NTAPS_MAX)_s$(SYMMETRIC_EN)
 endif
 
 ifndef TOPLEVEL

@@ -204,7 +204,7 @@ simulation in Phase 4.
 | PR-05 | M | `IN_FIFO_DEPTH` | 8 | 2 … 64, power of 2 | Input elastic buffer depth. |
 | PR-06 | M | `OUT_FIFO_DEPTH` | 8 | 2 … 64, power of 2 | Output elastic buffer depth. |
 | PR-07 | M | `AXIL_ADDR_W` | 12 | 12 … 16 | AXI4-Lite address width. |
-| PR-08 | S | `SYMMETRIC_EN` | 1 | 0, 1 | Synthesise the symmetric pre-adder path. When 0, `CFG.SYMMETRIC` is tied off. |
+| PR-08 | S | `SYMMETRIC_EN` | 1 | 0, 1 | Synthesise the symmetric pre-adder path **and the runtime mirror-tap mux**. When 0, neither is elaborated and `CFG.SYMMETRIC` is ignored. *(Implemented Phase 3; `fir_core` originally ignored this parameter — see D-026.)* |
 | PR-09 | M | — | — | — | **Illegal parameter combinations shall be caught at elaboration** with `$fatal` in a generate block, not silently mis-synthesised. |
 | PR-10 | M | — | — | — | Changing any parameter shall require **no source edit**. Every width shall be derived, never hard-coded. |
 

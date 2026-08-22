@@ -267,10 +267,37 @@ as in the DUT — the two cannot silently agree on a wrong answer.
 | Zero-padded history after flush | verified | `test_flush_zeroes_history` |
 | `LATENCY` and `ACC_W` match derivation | verified | `test_latency_and_widths` |
 | Accumulator never exceeds derived bound | verified | every test; peak reported |
-| ≥1M random samples, ≥20 sets, 6 mode pairs | verified | `test_random_exhaustive` |
+| ≥1M random samples, ≥20 sets, 6 mode pairs | verified at `NTAPS_MAX=16` | `make fir-full` |
+| Full 64-wide datapath, complete 12-test suite | verified | `make fir NTAPS_MAX=64` |
+| `SYMMETRIC_EN=0` build ignores `cfg_symmetric` | verified | `test_symmetric_identity` |
+
+### Measured results
+
+At `NTAPS_MAX = 64`, all 12 tests pass and the RTL reports:
+
+```
+LATENCY = 10 cycles, ACC_W = 38 bits (both confirmed)
+peak |accumulator| = 68719476736, bound = 137438953472 (50.0%, never exceeded)
+```
+
+`68719476736 = 2³⁶` is **exactly** the worst case this document derives in §4.1
+(`NTAPS_MAX · 2³⁰ = 64 · 2³⁰`), and exactly half of the `2³⁷` a signed 38-bit value holds. The
+extreme-operand stimulus reaches the predicted bound precisely and never crosses it — which is
+the evidence that the derivation is tight rather than merely generous.
 
 Reproduce with:
 
 ```bash
-make fir
+make fir                 # full 12-test suite, default NTAPS_MAX
+make fir NTAPS_MAX=64    # full-width datapath
+make fir-full            # the >=1M-sample randomised run
+make verify-widths       # static proof of the ACC_W derivation
+make verify-model        # cross-check the reference model against float
 ```
+
+**A note on sample counts and widths.** The ≥1M-sample run executes at `NTAPS_MAX = 16`, not 64.
+Icarus simulates the fully-parallel 64-tap datapath at roughly 40 cycles/second, which would put
+a 1M-sample run at about eight hours. The arithmetic under test does not depend on `NTAPS_MAX`
+except through `ACC_W` and the array size — every rounding, saturation, symmetry and tap-count
+path is exercised identically at 16 taps — so the split is a simulator constraint, not a coverage
+gap. Both figures are always reported with their tap count attached. See engineering log D-026.

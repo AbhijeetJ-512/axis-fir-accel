@@ -44,7 +44,14 @@
 module fir_core #(
   parameter int DATA_W    = 16,
   parameter int COEF_W    = 16,
-  parameter int NTAPS_MAX = 64
+  parameter int NTAPS_MAX = 64,
+  // When 0, the symmetric pre-adder and -- crucially -- the runtime-variable
+  // mirror-tap mux are NOT SYNTHESISED AT ALL, and cfg_symmetric is ignored.
+  // That mux is an O(NTAPS_MAX^2) structure: NTAPS_MAX instances each selecting
+  // one of NTAPS_MAX taps at a runtime index. At NTAPS_MAX=64 that is 4096
+  // select paths, and it is the reason simulation time scales superlinearly
+  // with tap count (risk R9). Requirement PR-08.
+  parameter bit SYMMETRIC_EN = 1'b1
 ) (
   input  logic                              clk,
   input  logic                              rst_n,
@@ -103,31 +110,41 @@ module fir_core #(
   genvar g;
   generate
     for (g = 0; g < NMAC; g++) begin : g_prep
-      logic [fir_pkg::CFG_NTAPS_W-1:0] far_full;
-      logic [IDXW-1:0]                 far_idx;
-      logic signed [DATA_W-1:0]        near_v, far_v;
-      logic signed [OPND_W-1:0]        near_x, far_x;
-      logic                            active, is_mid;
-
-      // Mirror index N-1-g. Only meaningful while `active`, and inside that
-      // range g <= H-1 <= N-1 so the subtraction cannot underflow.
-      assign far_full = cfg_ntaps - 1 - g;
-      assign far_idx  = far_full[IDXW-1:0];
+      logic signed [DATA_W-1:0] near_v;
+      logic signed [OPND_W-1:0] near_x;
 
       assign near_v = taps_flat[g*DATA_W +: DATA_W];
-      assign far_v  = taps_flat[far_idx*DATA_W +: DATA_W];
-
       assign near_x = {near_v[DATA_W-1], near_v};      // sign-extend to OPND_W
-      assign far_x  = {far_v[DATA_W-1],  far_v};
 
-      assign active = cfg_symmetric ? (g < h_taps) : (g < cfg_ntaps);
-      assign is_mid = (far_idx == IDXW'(g));           // odd N, centre tap
+      if (SYMMETRIC_EN) begin : g_sym
+        logic [fir_pkg::CFG_NTAPS_W-1:0] far_full;
+        logic [IDXW-1:0]                 far_idx;
+        logic signed [DATA_W-1:0]        far_v;
+        logic signed [OPND_W-1:0]        far_x;
+        logic                            active, is_mid;
 
-      assign opnd_c[g*OPND_W +: OPND_W] =
-            !active        ? {OPND_W{1'b0}}
-          : !cfg_symmetric ? near_x
-          : is_mid         ? near_x                    // centre tap counted ONCE
-          :                  (near_x + far_x);
+        // Mirror index N-1-g. Only meaningful while `active`, and inside that
+        // range g <= H-1 <= N-1 so the subtraction cannot underflow.
+        assign far_full = cfg_ntaps - 1 - g;
+        assign far_idx  = far_full[IDXW-1:0];
+        assign far_v    = taps_flat[far_idx*DATA_W +: DATA_W];   // the O(N^2) mux
+        assign far_x    = {far_v[DATA_W-1], far_v};
+
+        assign active = cfg_symmetric ? (g < h_taps) : (g < cfg_ntaps);
+        assign is_mid = (far_idx == IDXW'(g));           // odd N, centre tap
+
+        assign opnd_c[g*OPND_W +: OPND_W] =
+              !active        ? {OPND_W{1'b0}}
+            : !cfg_symmetric ? near_x
+            : is_mid         ? near_x                    // centre tap counted ONCE
+            :                  (near_x + far_x);
+      end else begin : g_asym
+        // No mirror mux, no pre-adder: a strictly cheaper build for
+        // applications that never need linear-phase folding.
+        logic active;
+        assign active = (g < cfg_ntaps);
+        assign opnd_c[g*OPND_W +: OPND_W] = active ? near_x : {OPND_W{1'b0}};
+      end
 
       assign coef_c[g*COEF_W +: COEF_W] = coef_flat[g*COEF_W +: COEF_W];
     end

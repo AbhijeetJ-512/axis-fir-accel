@@ -89,6 +89,7 @@ Full detail: [`docs/02_architecture.md`](docs/02_architecture.md).
 | Truncate / round-half-up / convergent rounding | **Implemented, verified** |
 | Symmetric and asymmetric saturation with sticky status | **Implemented, verified** |
 | Linear-phase symmetric pre-adder, incl. odd-length centre tap | **Implemented, verified** |
+| `SYMMETRIC_EN=0` build omits the pre-adder and mirror mux entirely | **Implemented, verified** |
 | Runtime coefficient reload via shadow bank, atomic at frame boundary | Specified — Phase 4 |
 | `MAC_UNITS` resource folding parameter | Specified — Phase 4 |
 | Dual-clock control/data split with proper CDC | Specified — Phase 7 |
@@ -179,6 +180,11 @@ Planned for later phases: `make lint` (Verilator), `make synth` (Yosys → Nanga
 | TR-04: `m_axis_tready` → `s_axis_tready` | **no combinational path** | `make comb-check` (self-testing) |
 | Inferred latches / tri-states / comb. loops | **0**, all 5 configurations | `synthesis/reports/elab_*.log` |
 | Accumulator width derivation | sufficient **and** minimal, `NTAPS_MAX` 4…256 | `make verify-widths` |
+| FIR arithmetic vs Python model | **bit-exact**, 12/12 tests at `NTAPS_MAX=64` | `make fir NTAPS_MAX=64` |
+| Peak accumulator under extreme operands | `2³⁶` — exactly the derived worst case, 50.0% of range | `make fir` |
+| Pipeline latency | **10 cycles** at 64 taps = `4 + clog2(64)`, measured not assumed | `test_latency_and_widths` |
+| Symmetric ≡ asymmetric, N = 1…64 odd and even | bit-identical | `test_symmetric_identity` |
+| Reference model vs float convolution | worst **0.4999 LSB** = the exact bound for correct rounding | `make verify-model` |
 
 **Not yet measured** — the datapath does not exist until Phase 3:
 
