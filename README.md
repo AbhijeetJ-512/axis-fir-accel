@@ -2,10 +2,10 @@
 
 **A programmable fixed-point FIR filter accelerator with AXI4-Stream data plane and AXI4-Lite control plane.**
 
-> **Project status: Phase 2 of 12 complete — control plane and stream flow control verified.**
-> The FIR arithmetic arrives in Phase 3. No area, timing or power figure is claimed; every such
-> figure below is labelled **NOT YET MEASURED** and will be replaced only by a value read out of a
-> checked-in tool report.
+> **Project status: Phase 3 of 12 complete — control plane, stream flow control and FIR
+> arithmetic all verified.** Resource folding is Phase 4. No area, timing or power figure is
+> claimed; every such figure below is labelled **NOT YET MEASURED** and will be replaced only by a
+> value read out of a checked-in tool report.
 
 ```
 $ make check
@@ -83,12 +83,12 @@ Full detail: [`docs/02_architecture.md`](docs/02_architecture.md).
 | RW1C interrupt status with set-wins-over-clear | **Implemented, verified** |
 | Coefficient region decode with out-of-range rejection | **Implemented, verified** |
 | Reset synchroniser (async assert, sync de-assert) | **Implemented, verified** |
-| `y[n] = Σ h[k]·x[n-k]`, runtime tap count `1 ≤ N ≤ NTAPS_MAX` | Specified — Phase 3 |
-| Q1.15 samples and coefficients, exact Q2.30 products | Specified — Phase 3 |
-| Derived, provably overflow-free accumulator | Specified — Phase 3 |
-| Truncate / round-half-up / convergent rounding | Specified — Phase 3 |
-| Symmetric and asymmetric saturation with sticky status | Specified — Phase 3 |
-| Linear-phase symmetric-coefficient folding (halves multipliers) | Specified — Phase 3 |
+| `y[n] = Σ h[k]·x[n-k]`, runtime tap count `1 ≤ N ≤ NTAPS_MAX` | **Implemented, verified** |
+| Q1.15 samples and coefficients, exact products | **Implemented, verified** |
+| Derived, provably overflow-free accumulator | **Implemented, verified** |
+| Truncate / round-half-up / convergent rounding | **Implemented, verified** |
+| Symmetric and asymmetric saturation with sticky status | **Implemented, verified** |
+| Linear-phase symmetric pre-adder, incl. odd-length centre tap | **Implemented, verified** |
 | Runtime coefficient reload via shadow bank, atomic at frame boundary | Specified — Phase 4 |
 | `MAC_UNITS` resource folding parameter | Specified — Phase 4 |
 | Dual-clock control/data split with proper CDC | Specified — Phase 7 |
@@ -105,10 +105,10 @@ Definition of Done.
 | [`00_project_plan.md`](docs/00_project_plan.md) | Repository layout, 12 phases, risks, toolchain | Complete |
 | [`01_requirements.md`](docs/01_requirements.md) | Tiered requirements (MUST/SHOULD/NICE) | Complete |
 | [`02_architecture.md`](docs/02_architecture.md) | Blocks, dataflow, flow control, reset, bottlenecks | Complete |
-| [`engineering_log.md`](docs/engineering_log.md) | Every decision with options and tradeoffs (D-001…D-021) | Live |
+| [`engineering_log.md`](docs/engineering_log.md) | Every decision with options and tradeoffs (D-001…D-025) | Live |
 | [`04_interfaces.md`](docs/04_interfaces.md) | Signal tables, register map, driver sequence, stream contract | Complete for both interfaces |
 | `03_microarchitecture.md` | RTL-level block detail, pipeline, corner cases | Phase 4 |
-| `05_fixed_point.md` | Numerical model, derivations, equations | Phase 3 |
+| [`05_fixed_point.md`](docs/05_fixed_point.md) | Numerical model, derivations, equations | Complete |
 | `06_verification_plan.md` | Strategy, verification matrix | Phase 5 |
 | `07_testbench_architecture.md` | TB components, UVM justification | Phase 5 |
 | `08_assertion_plan.md` | SVA properties and intent | Phase 6 |
@@ -149,7 +149,7 @@ Working today:
 make check           # everything that gates a phase (the block quoted above)
 make tools           # report which tools are present
 make regress         # both cocotb suites
-make csr / stream    # one suite at a time
+make csr / stream / fir   # one suite at a time
 make sweep           # both suites across their parameter sets
 make elab-sweep      # Yosys structural gate across parameter sets
 make comb-check      # structural proof of TR-04 on the elaborated netlist

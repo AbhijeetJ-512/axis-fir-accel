@@ -632,4 +632,138 @@ instances cannot accumulate an unbounded combinational path.
 
 ---
 
-*Entries D-022 onward will be added during Phase 3.*
+## D-022 — The symmetric datapath needs no extra accumulator bits
+
+**2026-08-17 · Phase 3**
+
+**Problem.** The symmetric (linear-phase) form pre-adds two samples before multiplying, so each
+operand is `DATA_W+1` bits and each product can reach `2³¹` instead of `2³⁰`. The obvious
+conclusion is that `ACC_W` must grow by one bit in symmetric mode — which would mean two
+different accumulator widths, or one width sized for the worse case and wasted in the other.
+
+**Decision.** Neither. The existing `ACC_W = DATA_W + COEF_W + ceil(log2(NTAPS_MAX))` covers both
+datapaths unchanged.
+
+**Reason.** The extra operand bit is cancelled exactly by there being half as many products:
+
+```
+    asymmetric:   N         · 2³⁰  =  N · 2³⁰
+    symmetric:    ceil(N/2) · 2³¹  =  N · 2³⁰
+```
+
+**This was verified before being relied on, not reasoned about and assumed.**
+`scripts/verify_acc_width.py` now computes the symmetric bound independently and asserts it
+equals the asymmetric one for every supported `NTAPS_MAX`. If a future width change ever breaks
+the cancellation, the check fails rather than the filter silently corrupting.
+
+**Tradeoffs.** None found. The result is a genuine simplification: one accumulator width, one
+no-overflow proof, both modes.
+
+---
+
+## D-023 — Icarus silently ignores part-selects inside `always_*` processes
+
+**2026-08-17 · Phase 3**
+
+**Problem.** `round_sat` originally saturated inside an `always_comb`, assigning
+`y = max_pos[DATA_W-1:0]`. Icarus 12 reported:
+
+```
+sorry: constant selects in always_* processes are not currently supported
+       (all bits will be included)
+```
+
+**This is a correctness hazard wearing the clothes of a cosmetic warning.** "All bits will be
+included" means the part-select is *discarded* — the tool does not refuse the code, it silently
+compiles something else. Any behaviour it produced would have been an artefact of the simulator
+rather than of the design, and would not have matched synthesis.
+
+**Decision.** Rewrite the saturation as continuous assignments, with the three narrowed candidate
+values (`max_pos_t`, `min_neg_t`, `rounded_t`) computed outside any process and the process
+reduced to a three-way select — which then needs no process at all.
+
+**Reason.** Continuous assignments have no such limitation. The block is a pure function of
+`(acc, round_mode, sat_mode)`, so expressing it as one is also more honest about what it is.
+
+**Tradeoffs.** None. The result is shorter and has no latch-inference surface at all.
+
+**Lesson worth keeping.** A simulator warning that says "not supported, proceeding anyway" is a
+build-breaking error in disguise. This is the second time in the project that a tool limitation
+would have produced a confidently wrong result if taken at face value (the first was Yosys and
+package functions, D-012).
+
+---
+
+## D-024 — cocotb discovery moved into the Makefile
+
+**2026-08-17 · Phase 3**
+
+**Problem.** `make` worked in one shell and failed in the next with
+`cocotb-config: No such file or directory`. The cause: `python3` on PATH is the *system*
+interpreter, which has no cocotb; cocotb lives in a conda prefix that is on PATH only sometimes.
+
+**Options considered.** Document "activate your environment first"; hard-code the conda path;
+discover the interpreter in the Makefile.
+
+**Decision.** Discover it, in the **top-level** Makefile.
+
+**Reason.** "Works if your shell happens to be set up right" is precisely the failure this
+project exists to avoid (D-002). A reviewer who clones the repository and types `make` must get
+a result, not an environment puzzle.
+
+The placement matters and cost an experiment to establish: cocotb's own `Makefile.sim` resolves
+`cocotb-config` with a **parse-time** `$(shell ...)`, and GNU Make's `export PATH` affects
+**recipes only, not parse-time shell calls**. Verified directly:
+
+```
+shell-sees:  NOTFOUND
+recipe-sees: /home/abhi/miniconda3/bin/cocotb-config
+```
+
+So exporting PATH inside `tb/cocotb/Makefile` cannot work — by the time that file is parsed it is
+already too late. Doing it in the top-level Makefile does work, because the sub-make is launched
+from a *recipe* and inherits the corrected environment. `tb/cocotb/Makefile` now detects the
+situation and emits an actionable error instead of failing three layers down inside cocotb.
+
+**Tradeoffs.** The discovery loop hard-codes a few conventional locations
+(`$CONDA_PREFIX`, `~/miniconda3`, `~/anaconda3`) as fallbacks. `PYTHON=` overrides it. Verified by
+running the full suite from `PATH=/usr/bin:/bin`.
+
+---
+
+## D-025 — Rounding as one predicate, plus a test that the modes are distinguishable
+
+**2026-08-17 · Phase 3**
+
+**Problem.** Three rounding modes could be three separate expressions, or one shared floor plus a
+mode-dependent increment.
+
+**Decision.** One shared floor, one predicate:
+
+```
+    TRUNC       inc = 0
+    HALF_UP     inc = guard
+    CONVERGENT  inc = guard & (sticky | lsb)
+```
+
+**Reason.** Cheaper in gates (one adder, one mux on the increment) and far easier to argue about:
+the three modes differ *only* in when they add one, so a reviewer checks one line rather than
+three expressions for consistency.
+
+**The second half of the decision matters more.** A suite in which all three modes pass proves
+nothing if the stimulus never produced a tie — the modes would be indistinguishable and the tests
+would be checking the same behaviour three times. `test_rounding_modes_differ` therefore asserts
+that TRUNC, HALF_UP and CONVERGENT produce **different** output on the chosen stimulus. If a
+future change made the stimulus miss the tie cases, that test fails and says so, rather than the
+other rounding tests quietly becoming vacuous.
+
+This is the same principle as the self-test in `check_comb_independence.sh` (D-021): a check that
+cannot demonstrate a failure is not evidence of anything.
+
+**Tradeoffs.** `RND_RESERVED` maps to `inc = 0` in the `default` arm rather than being unreachable.
+It is prevented from being selected by `CFG_ERR`, so the arm is defensive only — but leaving the
+case statement without a default would infer a latch, which is worse.
+
+---
+
+*Entries D-026 onward will be added during Phase 4.*

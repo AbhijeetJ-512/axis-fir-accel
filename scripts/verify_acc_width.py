@@ -5,8 +5,9 @@ Claim under test
 ----------------
     ACC_W = DATA_W + COEF_W + ceil(log2(NTAPS_MAX))
 
-is both SUFFICIENT (no signed overflow is possible for any legal operand sequence)
-and MINIMAL (ACC_W - 1 bits would be insufficient).
+is SUFFICIENT (no signed overflow is possible for any legal operand sequence),
+MINIMAL (ACC_W - 1 bits would be insufficient), and covers BOTH the asymmetric
+datapath and the symmetric (linear-phase pre-adder) datapath.
 
 Both operands are signed Q(1).(W-1), so the extremal values are -2^(W-1) and
 +2^(W-1)-1. The worst-case accumulator magnitude arises from NTAPS_MAX products
@@ -41,19 +42,32 @@ def check(ntaps_max: int, data_w: int = DATA_W, coef_w: int = COEF_W) -> bool:
     max_sum = ntaps_max * max(products)
     min_sum = ntaps_max * min(products)
 
+    # SYMMETRIC mode uses a pre-adder, so each operand is one bit wider -- but
+    # there are only ceil(N/2) products instead of N. Those two effects cancel
+    # exactly, so the same ACC_W covers both modes. Verified, not assumed:
+    # a wrong answer here would silently corrupt every linear-phase filter.
+    pair_lo, pair_hi = 2 * x_lo, 2 * x_hi
+    sym_products = [p * h for p in (pair_lo, pair_hi) for h in (h_lo, h_hi)]
+    half = (ntaps_max + 1) // 2
+    sym_max = half * max(sym_products)
+    sym_min = half * min(sym_products)
+    max_sum = max(max_sum, sym_max)
+    min_sum = min(min_sum, sym_min)
+
     fits_lo, fits_hi = signed_range(acc_w)
     sufficient = fits_lo <= min_sum and max_sum <= fits_hi
 
     tight_lo, tight_hi = signed_range(acc_w - 1)
     minimal = not (tight_lo <= min_sum and max_sum <= tight_hi)
 
-    status = "PASS" if (sufficient and minimal) else "FAIL"
+    same = (sym_max == ntaps_max * max(products))
+    status = "PASS" if (sufficient and minimal and same) else "FAIL"
     print(
         f"[{status}] NTAPS_MAX={ntaps_max:4d}  ACC_W={acc_w:2d}  "
         f"sum=[{min_sum}, {max_sum}]  repr=[{fits_lo}, {fits_hi}]  "
-        f"sufficient={sufficient}  minimal={minimal}"
+        f"sufficient={sufficient}  minimal={minimal}  sym==asym={same}"
     )
-    return sufficient and minimal
+    return sufficient and minimal and same
 
 
 def main() -> int:

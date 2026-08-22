@@ -74,8 +74,31 @@ ifeq ($(SUITE),stream)
   CFG_TAG := stream_d$(DATA_W)_i$(IN_FIFO_DEPTH)_o$(OUT_FIFO_DEPTH)_p$(PIPE_DEPTH)
 endif
 
+# ---- Suite: fir (Phase 3 arithmetic) ----------------------------------------
+ifeq ($(SUITE),fir)
+  DATA_W    ?= 16
+  COEF_W    ?= 16
+  NTAPS_MAX ?= 64
+  RAND_SETS ?= 20
+  RAND_LEN  ?= 1200
+  export DATA_W COEF_W NTAPS_MAX RAND_SETS RAND_LEN
+
+  TOPLEVEL := fir_core_wrap
+  MODULE   ?= tests.test_fir_math
+  VERILOG_SOURCES := $(COMMON_SOURCES) \
+      $(RTL)/dsp/delay_line.sv $(RTL)/dsp/mac_array.sv \
+      $(RTL)/dsp/acc_reduce.sv $(RTL)/dsp/round_sat.sv \
+      $(RTL)/dsp/fir_core.sv \
+      $(ROOT)/tb/sv/fir_core_wrap.sv
+  PARAM_ARGS := \
+      -P$(TOPLEVEL).DATA_W=$(DATA_W) \
+      -P$(TOPLEVEL).COEF_W=$(COEF_W) \
+      -P$(TOPLEVEL).NTAPS_MAX=$(NTAPS_MAX)
+  CFG_TAG := fir_d$(DATA_W)_c$(COEF_W)_n$(NTAPS_MAX)
+endif
+
 ifndef TOPLEVEL
-  $(error Unknown SUITE '$(SUITE)'. Use SUITE=csr or SUITE=stream)
+  $(error Unknown SUITE '$(SUITE)'. Use SUITE=csr, SUITE=stream or SUITE=fir)
 endif
 
 # ---- Tool arguments ---------------------------------------------------------
@@ -91,5 +114,18 @@ SIM_BUILD           := $(ROOT)/sim/build_$(CFG_TAG)
 COCOTB_RESULTS_FILE := $(ROOT)/sim/results_$(CFG_TAG).xml
 
 export PYTHONPATH := $(TB_DIR):$(PYTHONPATH)
+
+# ---- cocotb reachability ----------------------------------------------------
+# cocotb's own Makefile.sim resolves `cocotb-config` with a parse-time
+# $(shell ...), and GNU Make's `export PATH` does NOT affect parse-time shell
+# calls -- only recipes. So PATH must already be correct when this file is
+# parsed. The top-level Makefile arranges that; running make here directly with
+# a PATH that lacks cocotb gives an unhelpful "Couldn't find makefile for
+# simulator" error several layers down, so it is caught here instead.
+ifeq ($(shell command -v cocotb-config >/dev/null 2>&1 && echo ok),)
+  $(error cocotb-config is not on PATH. Run the top-level 'make csr|stream|fir', \
+          which discovers it, or add the bin directory of the Python that has \
+          cocotb installed to PATH.)
+endif
 
 include $(shell cocotb-config --makefiles)/Makefile.sim

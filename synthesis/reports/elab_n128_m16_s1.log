@@ -1,1 +1,4 @@
 Warning: Encountered `translate_off' comment! Such legacy hot comments are supported by Yosys, but are not part of any formal language specification. Using a portable and standards-compliant construct such as `ifdef is recommended!
+Warning: Replacing memory \mem with list of registers. See rtl/dsp/delay_line.sv:41
+Warning: Replacing memory \g_tree.node with list of registers. See rtl/dsp/acc_reduce.sv:75
+Warning: Replacing memory \leaf with list of registers. See rtl/dsp/acc_reduce.sv:59

@@ -29,4 +29,8 @@
 // Proven sufficient and minimal for NMAX in 4..256 by verify_acc_width.py.
 `define FIR_ACC_W(DW, CW, NMAX) ((DW) + (CW) + $clog2(NMAX))
 
+// Fractional bits discarded when narrowing the accumulator back to the sample
+// format: product has (DW-1)+(CW-1) fractional bits, output keeps (DW-1).
+`define FIR_SHIFT(CW) ((CW) - 1)
+
 `endif

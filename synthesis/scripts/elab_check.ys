@@ -23,7 +23,12 @@ read_verilog -sv -I rtl/common \
     rtl/axi_lite/axil_slave.sv \
     rtl/axi_stream/axis_fifo.sv \
     rtl/control/credit_ctr.sv \
-    rtl/control/csr_regfile.sv
+    rtl/control/csr_regfile.sv \
+    rtl/dsp/delay_line.sv \
+    rtl/dsp/mac_array.sv \
+    rtl/dsp/acc_reduce.sv \
+    rtl/dsp/round_sat.sv \
+    rtl/dsp/fir_core.sv
 
 # Elaborate every module standalone so that an unused module cannot hide a bug.
 hierarchy -check

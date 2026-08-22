@@ -8,6 +8,8 @@
 #   make regress     both cocotb suites, default parameters
 #   make csr         Phase 1 control-plane suite only
 #   make stream      Phase 2 stream / flow-control suite only
+#   make fir         Phase 3 FIR arithmetic suite only
+#   make fir-full    the >=1M-sample Definition-of-Done run (minutes)
 #   make sweep       both suites across their parameter sets
 #   make elab        Yosys structural gate (latches / tri-states / loops)
 #   make elab-sweep  the same gate across parameter sets
@@ -21,6 +23,26 @@
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 COCOTB_DIR := $(ROOT)/tb/cocotb
 
+# ---- Python / cocotb discovery ----------------------------------------------
+# The system python3 is not necessarily the interpreter cocotb was installed
+# into -- on a machine with conda it usually is not. Discover one that can
+# import cocotb and put its script directory on PATH, so that every recipe
+# below (and the sub-make it launches) can find `cocotb-config`.
+#
+# This must happen HERE rather than in tb/cocotb/Makefile: cocotb's own
+# Makefile.sim resolves cocotb-config with a parse-time $(shell ...), and
+# GNU Make's `export PATH` affects recipes but NOT parse-time shell calls. The
+# sub-make inherits the exported PATH through the recipe, which is what makes
+# it work. Override with: make PYTHON=/path/to/python
+PYTHON ?= $(shell for p in python3 python "$$CONDA_PREFIX/bin/python3" \
+                    "$$HOME/miniconda3/bin/python3" "$$HOME/anaconda3/bin/python3"; do \
+                    { command -v "$$p" >/dev/null 2>&1 || [ -x "$$p" ]; } || continue; \
+                    "$$p" -c 'import cocotb' >/dev/null 2>&1 || continue; \
+                    command -v "$$p" 2>/dev/null || echo "$$p"; break; \
+                  done)
+COCOTB_BIN := $(if $(PYTHON),$(shell $(PYTHON) -c "import sysconfig; print(sysconfig.get_path('scripts'))" 2>/dev/null))
+export PATH := $(if $(COCOTB_BIN),$(COCOTB_BIN):)$(PATH)
+
 NTAPS_MAX    ?= 64
 MAC_UNITS    ?= 8
 DATA_W       ?= 16
@@ -31,16 +53,16 @@ SUITE        ?= csr
 CSR_PARAMS := NTAPS_MAX=$(NTAPS_MAX) MAC_UNITS=$(MAC_UNITS) DATA_W=$(DATA_W) \
               COEF_W=$(COEF_W) SYMMETRIC_EN=$(SYMMETRIC_EN)
 
-.PHONY: all check regress csr stream sweep csr-sweep stream-sweep waves \
-        elab elab-sweep comb-check verify-widths tools clean help
+.PHONY: all check regress csr stream fir fir-full sweep csr-sweep stream-sweep waves \
+        elab elab-sweep comb-check verify-widths verify-model tools clean help
 
 all: check
 
 # Everything that gates a phase.
-check: regress elab-sweep comb-check verify-widths
+check: regress elab-sweep comb-check verify-widths verify-model
 
 # --- Simulation --------------------------------------------------------------
-regress: csr stream
+regress: csr stream fir
 
 csr:
 	@echo "=== Phase 1 suite: AXI4-Lite control plane ==="
@@ -51,6 +73,21 @@ stream:
 	@echo "=== Phase 2 suite: AXI4-Stream path and flow control ==="
 	@$(MAKE) -s -C $(COCOTB_DIR) SUITE=stream 2>&1 \
 	  | grep -E "TESTS=|AssertionError|matched exactly" || true
+
+fir:
+	@echo "=== Phase 3 suite: FIR arithmetic (bit-exact) ==="
+	@$(MAKE) -s -C $(COCOTB_DIR) SUITE=fir NTAPS_MAX=$(NTAPS_MAX) 2>&1 \
+	  | grep -E "TESTS=|AssertionError|BIT-EXACT|peak \||LATENCY =" || true
+
+# The Phase 3 Definition-of-Done run: >= 1M random samples. Kept separate from
+# `make fir` because at 64 taps Icarus evaluates 64 multipliers per cycle, so
+# the full run takes minutes -- too slow to sit inside the routine phase gate,
+# which needs to stay fast enough that people actually run it.
+fir-full:
+	@echo "=== Phase 3 DoD run: >=1M samples, 20 coefficient sets, 6 mode pairs ==="
+	@$(MAKE) -s -C $(COCOTB_DIR) SUITE=fir NTAPS_MAX=$(NTAPS_MAX) \
+	  RAND_SETS=20 RAND_LEN=50000 2>&1 \
+	  | grep -E "TESTS=|AssertionError|BIT-EXACT|peak \|" || true
 
 waves:
 	$(MAKE) -C $(COCOTB_DIR) SUITE=$(SUITE) WAVES=1
@@ -98,6 +135,9 @@ comb-check:
 # --- Derivation check --------------------------------------------------------
 verify-widths:
 	@python3 $(ROOT)/scripts/verify_acc_width.py
+
+verify-model:
+	@python3 $(ROOT)/scripts/verify_ref_model.py
 
 # --- Environment -------------------------------------------------------------
 tools:

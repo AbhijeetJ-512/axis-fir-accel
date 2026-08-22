@@ -32,9 +32,12 @@ for cfg in "${CONFIGS[@]}"; do
     read_verilog -sv -I rtl/common \
         rtl/common/fir_pkg.sv rtl/common/reset_sync.sv \
         rtl/axi_lite/axil_slave.sv rtl/axi_stream/axis_fifo.sv \
-        rtl/control/credit_ctr.sv rtl/control/csr_regfile.sv
+        rtl/control/credit_ctr.sv rtl/control/csr_regfile.sv \
+        rtl/dsp/delay_line.sv rtl/dsp/mac_array.sv rtl/dsp/acc_reduce.sv \
+        rtl/dsp/round_sat.sv rtl/dsp/fir_core.sv
     chparam -set NTAPS_MAX ${NT} -set MAC_UNITS ${MU} \
             -set DATA_W ${DW} -set COEF_W ${CW} -set SYMMETRIC_EN ${SE} csr_regfile
+    chparam -set DATA_W ${DW} -set COEF_W ${CW} -set NTAPS_MAX ${NT} fir_core
     hierarchy -check
     proc
     opt_expr
