@@ -68,18 +68,15 @@ regress: csr stream fir top
 
 csr:
 	@echo "=== Phase 1 suite: AXI4-Lite control plane ==="
-	@$(MAKE) -s -C $(COCOTB_DIR) SUITE=csr $(CSR_PARAMS) 2>&1 \
-	  | grep -E "TESTS=|AssertionError" || true
+	@scripts/run_suite.sh "TESTS=|AssertionError" $(COCOTB_DIR) SUITE=csr $(CSR_PARAMS)
 
 stream:
 	@echo "=== Phase 2 suite: AXI4-Stream path and flow control ==="
-	@$(MAKE) -s -C $(COCOTB_DIR) SUITE=stream 2>&1 \
-	  | grep -E "TESTS=|AssertionError|matched exactly" || true
+	@scripts/run_suite.sh "TESTS=|AssertionError|matched exactly" $(COCOTB_DIR) SUITE=stream
 
 fir:
 	@echo "=== Phase 3 suite: FIR arithmetic (bit-exact) ==="
-	@$(MAKE) -s -C $(COCOTB_DIR) SUITE=fir NTAPS_MAX=$(NTAPS_MAX) 2>&1 \
-	  | grep -E "TESTS=|AssertionError|BIT-EXACT|peak \||LATENCY =" || true
+	@scripts/run_suite.sh "TESTS=|AssertionError|BIT-EXACT|peak \||LATENCY =" $(COCOTB_DIR) SUITE=fir NTAPS_MAX=$(NTAPS_MAX)
 
 # The Phase 3 Definition-of-Done run: >= 1M random samples. Kept separate from
 # `make fir` because at 64 taps Icarus evaluates 64 multipliers per cycle, so
@@ -87,14 +84,12 @@ fir:
 # which needs to stay fast enough that people actually run it.
 fir-full:
 	@echo "=== Phase 3 DoD run: >=1M samples, 20 coefficient sets, 6 mode pairs ==="
-	@$(MAKE) -s -C $(COCOTB_DIR) SUITE=fir NTAPS_MAX=$(NTAPS_MAX) \
-	  RAND_SETS=20 RAND_LEN=50000 2>&1 \
-	  | grep -E "TESTS=|AssertionError|BIT-EXACT|peak \|" || true
+	@scripts/run_suite.sh "TESTS=|AssertionError|BIT-EXACT|peak \|" $(COCOTB_DIR) SUITE=fir NTAPS_MAX=$(NTAPS_MAX) \
+	  RAND_SETS=20 RAND_LEN=50000
 
 top:
 	@echo "=== Phase 4 suite: full IP integration, MAC_UNITS=$(MAC_UNITS) ==="
-	@$(MAKE) -s -C $(COCOTB_DIR) SUITE=top NTAPS_MAX=32 MAC_UNITS=$(MAC_UNITS) 2>&1 \
-	  | grep -E "TESTS=|AssertionError|BIT-EXACT|II:|bit-identical" || true
+	@scripts/run_suite.sh "TESTS=|AssertionError|BIT-EXACT|II:|bit-identical" $(COCOTB_DIR) SUITE=top NTAPS_MAX=32 MAC_UNITS=$(MAC_UNITS)
 
 # Risk R3: in a folded configuration the delay line must shift once per OUTPUT
 # SAMPLE, not once per pass. Every MAC_UNITS must give results bit-identical to
