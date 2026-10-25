@@ -1,0 +1,76 @@
+/home/abhi/miniconda3/lib/python3.13/site-packages/cocotb_tools/makefiles/simulators/Makefile.icarus:66: Using MODULE is deprecated, please use COCOTB_TEST_MODULES instead.
+     -.--ns INFO     gpi                                ..mbed/gpi_embed.cpp:93   in _embed_init_python              Using Python 3.13.0rc1 interpreter at /home/abhi/miniconda3/bin/python3.13
+     -.--ns INFO     gpi                                ../gpi/GpiCommon.cpp:79   in gpi_print_registered_impl       VPI registered
+     0.00ns INFO     cocotb                             Running on Icarus Verilog version 12.0 (stable)
+     0.00ns INFO     cocotb                             Seeding Python random module with 1792537530
+     0.00ns INFO     cocotb                             Initialized cocotb v2.0.1 from /home/abhi/miniconda3/lib/python3.13/site-packages/cocotb
+     0.00ns INFO     cocotb.regression                  pytest not found, install it to enable better AssertionError messages
+     0.00ns INFO     cocotb                             Running tests
+     0.00ns INFO     cocotb.regression                  running tests.test_fir_math.test_latency_and_widths (1/12)
+                                                            The RTL's own LATENCY and ACC_W match the derivation.
+   215.00ns INFO     cocotb.fir_core_wrap               LATENCY = 11 cycles, ACC_W = 38 bits (both confirmed)
+   215.00ns INFO     cocotb.regression                  tests.test_fir_math.test_latency_and_widths passed
+   215.00ns INFO     cocotb.regression                  running tests.test_fir_math.test_impulse_response (2/12)
+                                                            An impulse recovers the coefficients: y[k] = h[k] * x[0].
+  2875.00ns INFO     cocotb.regression                  tests.test_fir_math.test_impulse_response passed
+  2875.00ns INFO     cocotb.regression                  running tests.test_fir_math.test_boxcar_moving_average (3/12)
+                                                            All-equal coefficients: the degenerate moving-average case (D-001).
+  6735.00ns INFO     cocotb.regression                  tests.test_fir_math.test_boxcar_moving_average passed
+  6735.00ns INFO     cocotb.regression                  running tests.test_fir_math.test_extreme_operands (4/12)
+                                                            All-minimum and all-maximum inputs against all-extreme coefficients.
+  6840.00ns WARNING  py.warnings                        /home/abhi/Documents/VLSI/Resume_projects/axis_fir_accel/tb/cocotb/tests/test_fir_math.py:94: DeprecationWarning: `logic_array.signed_integer` getter is deprecated. Use `logic_array.to_signed()` instead.
+                                                          a = abs(int(self.dut.dbg_acc.value.signed_integer))
+ 12715.00ns INFO     cocotb.fir_core_wrap               peak |accumulator| = 68719476736, ACC_W bound = 137438953472 (50.0% of range, never exceeded)
+ 12715.00ns INFO     cocotb.regression                  tests.test_fir_math.test_extreme_operands passed
+ 12715.00ns INFO     cocotb.regression                  running tests.test_fir_math.test_rounding_boundaries (5/12)
+                                                            Exact tie values for each rounding mode.
+ 13255.00ns INFO     cocotb.fir_core_wrap               mode 0: x=[1, 2, 3, 4, 5, -1, -2, -3, -4, -5, 7, -7, 8, -8] -> y=[0, 1, 1, 2, 2, -1, -1, -2, -2, -3, 3, -4, 4, -4]
+ 13695.00ns INFO     cocotb.fir_core_wrap               mode 1: x=[1, 2, 3, 4, 5, -1, -2, -3, -4, -5, 7, -7, 8, -8] -> y=[1, 1, 2, 2, 3, 0, -1, -1, -2, -2, 4, -3, 4, -4]
+ 14135.00ns INFO     cocotb.fir_core_wrap               mode 2: x=[1, 2, 3, 4, 5, -1, -2, -3, -4, -5, 7, -7, 8, -8] -> y=[0, 1, 2, 2, 2, 0, -1, -2, -2, -2, 4, -4, 4, -4]
+ 14135.00ns INFO     cocotb.regression                  tests.test_fir_math.test_rounding_boundaries passed
+ 14135.00ns INFO     cocotb.regression                  running tests.test_fir_math.test_rounding_modes_differ (6/12)
+                                                            The three rounding modes must NOT be silently identical.
+ 15315.00ns INFO     cocotb.fir_core_wrap               TRUNC=[0, 1, 2, -1, -2, -3] HALF_UP=[1, 2, 3, 0, -1, -2] CONVERGENT=[0, 2, 2, 0, -2, -2]
+ 15315.00ns INFO     cocotb.regression                  tests.test_fir_math.test_rounding_modes_differ passed
+ 15315.00ns INFO     cocotb.regression                  running tests.test_fir_math.test_saturation_boundaries (7/12)
+                                                            Saturation at the exact clamp points, in both modes.
+ 15785.01ns INFO     cocotb.fir_core_wrap               sat_mode=0: x=[-32768, 32767, -32767, 32766, 0, 1, -1] -> y=[32767, -32767, 32767, -32766, 0, -1, 1] sat=[1, 0, 0, 0, 0, 0, 0]
+ 16155.01ns INFO     cocotb.fir_core_wrap               sat_mode=1: x=[-32768, 32767, -32767, 32766, 0, 1, -1] -> y=[32767, -32767, 32767, -32766, 0, -1, 1] sat=[1, 0, 0, 0, 0, 0, 0]
+ 16155.01ns INFO     cocotb.regression                  tests.test_fir_math.test_saturation_boundaries passed
+ 16155.01ns INFO     cocotb.regression                  running tests.test_fir_math.test_symmetric_identity (8/12)
+                                                            Symmetric mode is BIT-IDENTICAL to asymmetric for linear-phase filters.
+ 36535.01ns INFO     cocotb.fir_core_wrap               symmetric == asymmetric for every tested length, odd and even
+ 36535.01ns INFO     cocotb.regression                  tests.test_fir_math.test_symmetric_identity passed
+ 36535.01ns INFO     cocotb.regression                  running tests.test_fir_math.test_ntaps_sweep (9/12)
+                                                            Every legal tap count from 1 to NTAPS_MAX.
+ 63515.01ns INFO     cocotb.fir_core_wrap               all tap counts 1..64 bit-exact
+ 63515.01ns INFO     cocotb.regression                  tests.test_fir_math.test_ntaps_sweep passed
+ 63515.01ns INFO     cocotb.regression                  running tests.test_fir_math.test_pipeline_gaps (10/12)
+                                                            Bubbles in in_valid must not disturb the result.
+ 67895.01ns INFO     cocotb.regression                  tests.test_fir_math.test_pipeline_gaps passed
+ 67895.01ns INFO     cocotb.regression                  running tests.test_fir_math.test_flush_zeroes_history (11/12)
+                                                            After a flush the response restarts from a zero-padded history (FR-04).
+ 68905.01ns INFO     cocotb.regression                  tests.test_fir_math.test_flush_zeroes_history passed
+ 68905.01ns INFO     cocotb.regression                  running tests.test_fir_math.test_random_exhaustive (12/12)
+                                                            >= 1M random samples over >= 20 coefficient sets and all 6 mode pairs.
+315005.01ns INFO     cocotb.fir_core_wrap               24000 samples across 20 coefficient sets, all 6 mode pairs: BIT-EXACT
+315005.01ns INFO     cocotb.regression                  tests.test_fir_math.test_random_exhaustive passed
+315005.01ns INFO     cocotb.regression                  ********************************************************************************************************
+                                                        ** TEST                                            STATUS  SIM TIME (ns)  REAL TIME (s)  RATIO (ns/s) **
+                                                        ********************************************************************************************************
+                                                        ** tests.test_fir_math.test_latency_and_widths      PASS         215.00           0.06       3526.93  **
+                                                        ** tests.test_fir_math.test_impulse_response        PASS        2660.00           0.23      11431.34  **
+                                                        ** tests.test_fir_math.test_boxcar_moving_average   PASS        3860.00           4.75        813.42  **
+                                                        ** tests.test_fir_math.test_extreme_operands        PASS        5980.00           0.77       7763.45  **
+                                                        ** tests.test_fir_math.test_rounding_boundaries     PASS        1420.00           0.21       6645.67  **
+                                                        ** tests.test_fir_math.test_rounding_modes_differ   PASS        1180.00           0.07      18051.99  **
+                                                        ** tests.test_fir_math.test_saturation_boundaries   PASS         840.00           0.06      13535.21  **
+                                                        ** tests.test_fir_math.test_symmetric_identity      PASS       20380.00          45.31        449.76  **
+                                                        ** tests.test_fir_math.test_ntaps_sweep             PASS       26980.00          14.30       1886.20  **
+                                                        ** tests.test_fir_math.test_pipeline_gaps           PASS        4380.00          15.81        277.05  **
+                                                        ** tests.test_fir_math.test_flush_zeroes_history    PASS        1010.00           0.16       6370.68  **
+                                                        ** tests.test_fir_math.test_random_exhaustive       PASS      246100.00        1060.85        231.98  **
+                                                        ********************************************************************************************************
+                                                        ** TESTS=12 PASS=12 FAIL=0 SKIP=0                             315005.01        1142.59        275.69  **
+                                                        ********************************************************************************************************
+exit 0

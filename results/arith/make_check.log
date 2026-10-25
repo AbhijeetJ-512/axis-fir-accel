@@ -1,0 +1,65 @@
+=== Phase 1 suite: AXI4-Lite control plane ===
+     0.00ns INFO     cocotb.regression                  pytest not found, install it to enable better AssertionError messages
+                                                        ** TESTS=16 PASS=16 FAIL=0 SKIP=0                               15050.01           0.25      60285.44  **
+=== Phase 2 suite: AXI4-Stream path and flow control ===
+     0.00ns INFO     cocotb.regression                  pytest not found, install it to enable better AssertionError messages
+   530.00ns INFO     cocotb.axis_loopback_wrap          1 beats matched exactly | peak in_fifo=1 peak out_fifo=1/8 | 43 cycles
+  1220.00ns INFO     cocotb.axis_loopback_wrap          16 beats matched exactly | peak in_fifo=1 peak out_fifo=1/8 | 58 cycles
+ 21750.00ns INFO     cocotb.axis_loopback_wrap          2000 beats matched exactly | peak in_fifo=1 peak out_fifo=1/8 | 2042 cycles
+ 40020.00ns INFO     cocotb.axis_loopback_wrap          500 beats matched exactly | peak in_fifo=1 peak out_fifo=1/8 | 1816 cycles
+ 65360.00ns INFO     cocotb.axis_loopback_wrap          500 beats matched exactly | peak in_fifo=8 peak out_fifo=8/8 | 2523 cycles
+ 79670.01ns INFO     cocotb.axis_loopback_wrap          500 beats matched exactly | peak in_fifo=8 peak out_fifo=8/8 | 1420 cycles
+ 85780.01ns INFO     cocotb.axis_loopback_wrap          64 beats matched exactly | peak in_fifo=8 peak out_fifo=8/8 | 600 cycles
+ 87910.01ns INFO     cocotb.axis_loopback_wrap          102 beats matched exactly | peak in_fifo=1 peak out_fifo=5/8 | 202 cycles
+ 92930.01ns INFO     cocotb.axis_loopback_wrap          300 beats matched exactly | peak in_fifo=1 peak out_fifo=1/8 | 491 cycles
+1809320.01ns INFO     cocotb.axis_loopback_wrap          100000 beats matched exactly | peak in_fifo=8 peak out_fifo=8/8 | 170957 cycles
+                                                         ** TESTS=12 PASS=12 FAIL=0 SKIP=0                            1809320.01          31.43      57564.17  **
+=== Phase 3 suite: FIR arithmetic (bit-exact) ===
+     0.00ns INFO     cocotb.regression                  pytest not found, install it to enable better AssertionError messages
+   215.00ns INFO     cocotb.fir_core_wrap               LATENCY = 11 cycles, ACC_W = 38 bits (both confirmed)
+ 12715.00ns INFO     cocotb.fir_core_wrap               peak |accumulator| = 68719476736, ACC_W bound = 137438953472 (50.0% of range, never exceeded)
+315005.01ns INFO     cocotb.fir_core_wrap               24000 samples across 20 coefficient sets, all 6 mode pairs: BIT-EXACT
+                                                        ** TESTS=12 PASS=12 FAIL=0 SKIP=0                             315005.01        1002.41        314.25  **
+=== Phase 4 suite: full IP integration, MAC_UNITS=8 ===
+     0.00ns INFO     cocotb.regression                  pytest not found, install it to enable better AssertionError messages
+ 33310.00ns INFO     cocotb.axis_fir_top                MAC_UNITS=8: bit-identical to the reference model
+ 50400.00ns INFO     cocotb.axis_fir_top                II: N=32 sym=0 MAC_UNITS=8 -> predicted 4, measured 4.027
+ 59810.00ns INFO     cocotb.axis_fir_top                II: N=32 sym=1 MAC_UNITS=8 -> predicted 2, measured 2.027
+ 64740.00ns INFO     cocotb.axis_fir_top                II: N=8 sym=0 MAC_UNITS=8 -> predicted 1, measured 1.028
+ 69530.00ns INFO     cocotb.axis_fir_top                II: N=1 sym=0 MAC_UNITS=8 -> predicted 1, measured 1.028
+157710.01ns INFO     cocotb.axis_fir_top                1800 samples across 6 configurations: BIT-EXACT (MAC_UNITS=8)
+                                                        ** TESTS=7 PASS=7 FAIL=0 SKIP=0                                       157710.01           8.75      18029.27  **
+  PASS  NTAPS_MAX=64   MAC_UNITS=8   SYM=1   -> synthesis/reports/elab_n64_m8_s1.log
+  PASS  NTAPS_MAX=32   MAC_UNITS=4   SYM=1   -> synthesis/reports/elab_n32_m4_s1.log
+  PASS  NTAPS_MAX=256  MAC_UNITS=1   SYM=0   -> synthesis/reports/elab_n256_m1_s0.log
+  PASS  NTAPS_MAX=16   MAC_UNITS=8   SYM=1   -> synthesis/reports/elab_n16_m8_s1.log
+  PASS  NTAPS_MAX=128  MAC_UNITS=16  SYM=1   -> synthesis/reports/elab_n128_m16_s1.log
+
+elab_sweep: all configurations clean (no latches, no tri-states, no loops)
+self-test: direct-wire module   = FOUND   (expect FOUND)
+self-test: through-a-flop module = clean  (expect clean)
+
+axis_fir_top:
+  PASS  m_axis_tready -> s_axis_tready  (TR-04)                    no combinational path
+  PASS  s_axis_tvalid -> m_axis_tvalid  (no feedthrough)           no combinational path
+  PASS  s_axis_tdata  -> m_axis_tdata   (no feedthrough)           no combinational path
+  PASS  m_axis_tready -> s_axil_awready (cross-plane)              no combinational path
+  PASS  s_axil_bready -> s_axil_awready (AXI4-Lite TR-04)          no combinational path
+  PASS  s_axil_rready -> s_axil_arready (AXI4-Lite TR-04)          no combinational path
+
+comb-independence: all checks pass
+Verifying ACC_W = 16 + 16 + clog2(NTAPS_MAX)
+
+[PASS] NTAPS_MAX=   4  ACC_W=34  sum=[-4294836224, 4294967296]  repr=[-8589934592, 8589934591]  sufficient=True  minimal=True  sym==asym=True
+[PASS] NTAPS_MAX=   8  ACC_W=35  sum=[-8589672448, 8589934592]  repr=[-17179869184, 17179869183]  sufficient=True  minimal=True  sym==asym=True
+[PASS] NTAPS_MAX=  16  ACC_W=36  sum=[-17179344896, 17179869184]  repr=[-34359738368, 34359738367]  sufficient=True  minimal=True  sym==asym=True
+[PASS] NTAPS_MAX=  32  ACC_W=37  sum=[-34358689792, 34359738368]  repr=[-68719476736, 68719476735]  sufficient=True  minimal=True  sym==asym=True
+[PASS] NTAPS_MAX=  64  ACC_W=38  sum=[-68717379584, 68719476736]  repr=[-137438953472, 137438953471]  sufficient=True  minimal=True  sym==asym=True
+[PASS] NTAPS_MAX= 128  ACC_W=39  sum=[-137434759168, 137438953472]  repr=[-274877906944, 274877906943]  sufficient=True  minimal=True  sym==asym=True
+[PASS] NTAPS_MAX= 256  ACC_W=40  sum=[-274869518336, 274877906944]  repr=[-549755813888, 549755813887]  sufficient=True  minimal=True  sym==asym=True
+
+RESULT: derivation holds
+cross-checked 16000 outputs over 400 random filters (0 saturated, skipped)
+worst |model - float| = 0.4999 output LSB (N=8, symmetric=False)
+RESULT: model agrees with float to within half an LSB -- sane
+exit 0

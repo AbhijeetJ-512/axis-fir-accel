@@ -171,8 +171,10 @@ async def test_latency_and_widths(dut):
     """The RTL's own LATENCY and ACC_W match the derivation."""
     c = await setup(dut)
     levels = (NTAPS_MAX - 1).bit_length()
-    assert c.latency == 4 + levels, \
-        f"LATENCY {c.latency} != 4 + clog2({NTAPS_MAX}) = {4 + levels}"
+    # Portfolio change: the folded core (Phase 4) is one stage deeper than the
+    # unfolded Phase 3 core it replaced: 5 + clog2 at P = 1 (was 4 + clog2).
+    assert c.latency == 5 + levels, \
+        f"LATENCY {c.latency} != 5 + clog2({NTAPS_MAX}) = {5 + levels}"
     acc_w = int(dut.dbg_acc_w.value)
     assert acc_w == DATA_W + COEF_W + levels, \
         f"ACC_W {acc_w} != {DATA_W}+{COEF_W}+{levels}"

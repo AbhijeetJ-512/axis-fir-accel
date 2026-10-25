@@ -1,0 +1,7 @@
+MAC_UNITS=1                        TESTS=7 PASS=7 FAIL=0 SKIP=0
+MAC_UNITS=2                        TESTS=7 PASS=7 FAIL=0 SKIP=0
+MAC_UNITS=4                        TESTS=7 PASS=7 FAIL=0 SKIP=0
+MAC_UNITS=8                        TESTS=7 PASS=7 FAIL=0 SKIP=0
+MAC_UNITS=16                       TESTS=7 PASS=7 FAIL=0 SKIP=0
+MAC_UNITS=32                       TESTS=7 PASS=7 FAIL=0 SKIP=0
+exit 0

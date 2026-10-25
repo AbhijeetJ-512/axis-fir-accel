@@ -1,0 +1,46 @@
+Control plane, stream path and full integration (baseline `make check`, default builds):
+  AXI4-Lite control plane : TESTS=16 PASS=16 FAIL=0 SKIP=0
+  AXI4-Stream flow control: TESTS=12 PASS=12 FAIL=0 SKIP=0 (largest run: 100000 beats matched exactly)
+  full IP, MAC_UNITS=8    : TESTS=7 PASS=7 FAIL=0 SKIP=0
+    initiation interval  N=32 sym=0 MAC_UNITS=8 -> predicted 4, measured 4.027
+    initiation interval  N=32 sym=1 MAC_UNITS=8 -> predicted 2, measured 2.027
+    initiation interval  N=8 sym=0 MAC_UNITS=8 -> predicted 1, measured 1.028
+    initiation interval  N=1 sym=0 MAC_UNITS=8 -> predicted 1, measured 1.028
+    1800 samples across 6 configurations: BIT-EXACT (MAC_UNITS=8)
+    elab_sweep: all configurations clean (no latches, no tri-states, no loops)
+    RESULT: derivation holds
+    worst |model - float| = 0.4999 output LSB (N=8, symmetric=False)
+    comb-independence: all checks pass (6 properties on axis_fir_top)
+
+Parameter sweeps (make sweep): control plane at five (NTAPS_MAX, MAC_UNITS, SYMMETRIC_EN) builds, stream path at five FIFO / pipe configurations:
+  csr: NTAPS_MAX=64 MAC_UNITS=8 SYM=1          TESTS=16 PASS=16 FAIL=0 SKIP=0
+  csr: NTAPS_MAX=32 MAC_UNITS=4 SYM=1          TESTS=16 PASS=16 FAIL=0 SKIP=0
+  csr: NTAPS_MAX=16 MAC_UNITS=8 SYM=1          TESTS=16 PASS=16 FAIL=0 SKIP=0
+  csr: NTAPS_MAX=128 MAC_UNITS=16 SYM=1        TESTS=16 PASS=16 FAIL=0 SKIP=0
+  csr: NTAPS_MAX=256 MAC_UNITS=1 SYM=0         TESTS=16 PASS=16 FAIL=0 SKIP=0
+  stream: D=16 IN=8 OUT=8 PIPE=4               TESTS=12 PASS=12 FAIL=0 SKIP=0
+  stream: D=16 IN=2 OUT=4 PIPE=2               TESTS=12 PASS=12 FAIL=0 SKIP=0
+  stream: D=16 IN=4 OUT=32 PIPE=16             TESTS=12 PASS=12 FAIL=0 SKIP=0
+  stream: D=8 IN=8 OUT=8 PIPE=1                TESTS=12 PASS=12 FAIL=0 SKIP=0
+  stream: D=32 IN=16 OUT=16 PIPE=8             TESTS=12 PASS=12 FAIL=0 SKIP=0
+
+Fold sweep (make fold-sweep): full-IP suite (7 tests) at NTAPS_MAX=32 for every MAC_UNITS; all runs bit-identical to the fold-agnostic model:
+  MAC_UNITS=1                        TESTS=7 PASS=7 FAIL=0 SKIP=0
+  MAC_UNITS=2                        TESTS=7 PASS=7 FAIL=0 SKIP=0
+  MAC_UNITS=4                        TESTS=7 PASS=7 FAIL=0 SKIP=0
+  MAC_UNITS=8                        TESTS=7 PASS=7 FAIL=0 SKIP=0
+  MAC_UNITS=16                       TESTS=7 PASS=7 FAIL=0 SKIP=0
+  MAC_UNITS=32                       TESTS=7 PASS=7 FAIL=0 SKIP=0
+
+Arithmetic suite on the final RTL (repaired wrapper, one pass per sample, MAC_UNITS = NTAPS_MAX):
+  NTAPS_MAX=16: TESTS=12 PASS=12 FAIL=0 SKIP=0
+      LATENCY = 9 cycles, ACC_W = 36 bits (both confirmed)
+      peak |accumulator| = 17179869184, ACC_W bound = 34359738368 (50.0% of range, never exceeded)
+      24000 samples across 20 coefficient sets, all 6 mode pairs: BIT-EXACT
+  NTAPS_MAX=64: TESTS=12 PASS=12 FAIL=0 SKIP=0
+      LATENCY = 11 cycles, ACC_W = 38 bits (both confirmed)
+      peak |accumulator| = 68719476736, ACC_W bound = 137438953472 (50.0% of range, never exceeded)
+      24000 samples across 20 coefficient sets, all 6 mode pairs: BIT-EXACT
+  large random run (make fir-full NTAPS_MAX=16, RAND_SETS=20 RAND_LEN=50000):
+      TESTS=12 PASS=12 FAIL=0 SKIP=0
+      1000000 samples across 20 coefficient sets, all 6 mode pairs: BIT-EXACT

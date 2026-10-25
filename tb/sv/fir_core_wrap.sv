@@ -1,13 +1,28 @@
 // -----------------------------------------------------------------------------
 // fir_core_wrap.sv   *** TESTBENCH WRAPPER -- NOT PART OF THE DELIVERED IP ***
 //
-// Phase 3 device under test: fir_core with a reset synchroniser and flat ports.
+// Arithmetic device under test: fir_core with a reset synchroniser and the flat,
+// flow-control-free port list the Phase 3 test bench was written against.
 // The datapath is exercised directly, with no FIFOs and no credit gating, so
-// that any mismatch is unambiguously an ARITHMETIC fault. Flow control was
-// already proved in Phase 2 and is deliberately not in the way here.
+// that any mismatch is unambiguously an ARITHMETIC fault.
 //
-// dbg_latency exports the compile-time LATENCY so the test checks the RTL's own
-// figure rather than a number duplicated in Python that could drift.
+// PORTFOLIO CHANGE (2026-10-21). The Phase 3 wrapper (kept in tb/sv/original/)
+// instantiated the unfolded fir_core, which had in_valid / in_last ports and a
+// LATENCY localparam. Phase 4 replaced those with the folded interface
+// (shift_en, pass_*, tap_base) and the wrapper was never updated, so
+// `make fir` / `make fir-full` stopped elaborating; `make check` hid that
+// because its `fir` step swallows the failure (`grep ... || true`).
+// This wrapper restores the suite by emulating, in two registers, what
+// fir_ctrl does for one pass per sample (P = 1):
+//     cycle c   : shift_en = in_valid   (the delay line takes the sample)
+//     cycle c+1 : pass_vld = pass_first = pass_last = 1, tap_base = 0
+// and MAC_UNITS = NTAPS_MAX, so every tap has its own multiplier (P = 1 for
+// every legal CFG.NTAPS). The arithmetic under test is therefore the real
+// folded datapath, run at its unfolded corner.
+//
+// dbg_latency is the documented latency from sample_start (here: in_valid) to
+// out_valid at P = 1: 5 + clog2(MAC_UNITS) (docs/03_microarchitecture.md
+// section 3). The test measures the same quantity in simulation and compares.
 // -----------------------------------------------------------------------------
 `timescale 1ns/1ps
 `include "fir_defs.svh"
@@ -45,20 +60,31 @@ module fir_core_wrap #(
   logic rst_n;
   reset_sync #(.STAGES(2)) u_rst (.clk (clk), .arst_n (arst_n), .rst_n (rst_n));
 
+  // Pass record: one cycle behind shift_en, as fir_ctrl produces it (pass_vld = busy).
+  logic pv, pl;
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n)      begin pv <= 1'b0; pl <= 1'b0; end
+    else if (clear)  begin pv <= 1'b0; pl <= 1'b0; end
+    else             begin pv <= in_valid; pl <= in_last; end
+  end
+
   fir_core #(
-    .DATA_W (DATA_W), .COEF_W (COEF_W), .NTAPS_MAX (NTAPS_MAX), .SYMMETRIC_EN (SYMMETRIC_EN)
+    .DATA_W (DATA_W), .COEF_W (COEF_W), .NTAPS_MAX (NTAPS_MAX),
+    .MAC_UNITS (NTAPS_MAX), .SYMMETRIC_EN (SYMMETRIC_EN)
   ) u_core (
     .clk (clk), .rst_n (rst_n), .clear (clear),
     .cfg_ntaps (cfg_ntaps), .cfg_round_mode (cfg_round_mode),
     .cfg_sat_mode (cfg_sat_mode), .cfg_symmetric (cfg_symmetric),
     .coef_flat (coef_flat),
-    .in_valid (in_valid), .in_data (in_data), .in_last (in_last),
+    .shift_en (in_valid), .in_data (in_data),
+    .pass_vld (pv), .pass_first (pv), .pass_last (pv), .pass_tlast (pl),
+    .tap_base ('0),
     .out_valid (out_valid), .out_data (out_data),
     .out_last (out_last), .out_sat (out_sat)
   );
 
-  assign dbg_latency = 8'(u_core.LATENCY);
-  assign dbg_acc_w   = 8'(u_core.ACC_W);
+  assign dbg_latency = 8'(5 + $clog2(NTAPS_MAX));
+  assign dbg_acc_w   = 8'(`FIR_ACC_W(DATA_W, COEF_W, NTAPS_MAX));
 
   // ---------------------------------------------------------------------------
   // Accumulator exposed so the test can report how close the stimulus actually
