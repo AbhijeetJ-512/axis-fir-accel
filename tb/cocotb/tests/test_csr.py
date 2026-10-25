@@ -15,7 +15,7 @@ import random
 
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import ReadOnly, RisingEdge
+from cocotb.triggers import FallingEdge, ReadOnly, RisingEdge
 
 from env import regmap as rm
 from env.axil_driver import AxiLiteMaster, AxiLiteProtocolMonitor
@@ -580,3 +580,128 @@ async def test_randomised_register_traffic(dut):
         f"read/data mismatch: {mon.reads_accepted} AR accepted, "
         f"{mon.read_data_seen} R beats")
     check_monitor(mon)
+
+
+@cocotb.test()
+async def test_read_request_while_response_stalled(dut):
+    """A read offered while the previous response is still waiting is held off, not half-accepted.
+
+    The driver in env/ keeps one read in flight, so this drives the read channels by hand: ARVALID for a second address stays high
+    across a stalled R beat. ARREADY must stay low and the first response must not change until it is taken; the second read is then
+    accepted, answered with its own data, and the register bus sees exactly one read strobe per accepted request (a strobe that
+    followed ARVALID would repeat the access once per stalled cycle)."""
+    axil, mon = await setup(dut)
+    s = axil._s
+    clk = dut.clk
+    strobes = {"n": 0, "stop": False}
+
+    async def count_strobes():                            # sampled mid-cycle, where every signal of the cycle has settled
+        while not strobes["stop"]:
+            await FallingEdge(clk)
+            strobes["n"] += int(dut.u_axil.reg_ren.value) == 1
+
+    cocotb.start_soon(count_strobes())
+    exp_cap = rm.expected_capability(NTAPS_MAX, MAC_UNITS, DATA_W, COEF_W, SYMMETRIC_EN)
+
+    s("araddr").value = rm.REG_ID                         # first read: accepted at once, RREADY held low
+    s("arvalid").value = 1
+    s("rready").value = 0
+    await ReadOnly()
+    assert int(s("arready").value) == 1, "ARREADY low with no response outstanding"
+    await RisingEdge(clk)                                 # the edge that takes the first AR
+    s("araddr").value = rm.REG_CAPABILITY                 # the second request is offered while the first R is stalled
+    stall = 7
+    for i in range(stall):
+        await ReadOnly()
+        assert int(s("rvalid").value) == 1, f"cycle {i}: RVALID dropped before RREADY"
+        assert int(s("arready").value) == 0, f"cycle {i}: ARREADY high while a response is waiting"
+        assert int(s("rdata").value) == rm.IP_ID and int(s("rresp").value) == rm.RESP_OKAY, f"cycle {i}: response changed while stalled"
+        await RisingEdge(clk)
+    s("rready").value = 1
+    await ReadOnly()
+    assert int(s("rvalid").value) == 1 and int(s("arready").value) == 0
+    await RisingEdge(clk)                                 # first response taken
+    await ReadOnly()
+    assert int(s("arready").value) == 1, "ARREADY did not return once the response was taken"
+    await RisingEdge(clk)                                 # the edge that takes the second AR
+    s("arvalid").value = 0
+    await ReadOnly()
+    assert int(s("rvalid").value) == 1
+    assert int(s("rdata").value) == exp_cap and int(s("rresp").value) == rm.RESP_OKAY, \
+        f"second read: got 0x{int(s('rdata').value):08X}, expected CAPABILITY 0x{exp_cap:08X}"
+    await RisingEdge(clk)                                 # second response taken
+    s("rready").value = 0
+    await RisingEdge(clk)
+    await RisingEdge(clk)
+    strobes["stop"] = True
+    assert strobes["n"] == 2, f"{strobes['n']} read-strobe cycles on the register bus for 2 accepted reads"
+    check_monitor(mon)
+
+
+@cocotb.test()
+async def test_write_request_while_response_stalled(dut):
+    """A second write offered while the first response is still waiting is held off, then applied after it, in order.
+
+    BREADY is held low after the first write; AW and W of a second write (a different value for the same register) are offered at once
+    and must not be accepted while the response is outstanding: AWREADY and WREADY stay low, the response does not change, a read through
+    the independent read channel still returns the FIRST value, and the register bus sees exactly one write strobe per accepted write.
+    The test records what it sees and carries on instead of stopping at the first wrong cycle, so that a slave which accepts the second
+    write early still goes through the clock edge on which the bus checkers (verif/) would catch it, and every problem is reported at the end."""
+    axil, mon = await setup(dut)
+    s = axil._s
+    clk = dut.clk
+    problems = []
+    strobes = {"n": 0, "stop": False}
+
+    async def count_strobes():                            # sampled mid-cycle, where every signal of the cycle has settled
+        while not strobes["stop"]:
+            await FallingEdge(clk)
+            strobes["n"] += int(dut.u_axil.reg_wen.value) == 1
+
+    cocotb.start_soon(count_strobes())
+
+    def expect(cond, msg):
+        if not cond:
+            problems.append(msg)
+
+    s("awaddr").value = rm.REG_IRQ_ENABLE                 # first write: AW and W together, BREADY held low
+    s("wdata").value = 0x1
+    s("wstrb").value = 0xF
+    s("awvalid").value = 1
+    s("wvalid").value = 1
+    s("bready").value = 0
+    await ReadOnly()
+    expect(int(s("awready").value) == 1 and int(s("wready").value) == 1, "AWREADY/WREADY low with no response outstanding")
+    await RisingEdge(clk)                                 # the edge that takes the first write
+    s("wdata").value = 0x6                                # the second write is offered at once, to the same register
+    stall = 6
+    for i in range(stall):
+        await ReadOnly()
+        expect(int(s("bvalid").value) == 1 and int(s("bresp").value) == rm.RESP_OKAY, f"cycle {i}: the response changed or dropped before BREADY")
+        expect(int(s("awready").value) == 0 and int(s("wready").value) == 0, f"cycle {i}: a write was accepted while a response was outstanding")
+        await RisingEdge(clk)
+    first, resp = await axil.read(rm.REG_IRQ_ENABLE)      # the read channel is independent: the second write must not have landed
+    expect(resp == rm.RESP_OKAY and first == 0x1, f"read during the stall returned 0x{first:X}, expected the first value 0x1")
+    await ReadOnly()
+    expect(int(s("awready").value) == 0 and int(s("wready").value) == 0 and int(s("bvalid").value) == 1, "the stall ended without BREADY")
+    await RisingEdge(clk)
+    s("bready").value = 1                                 # take the first response
+    await ReadOnly()
+    expect(int(s("bvalid").value) == 1 and int(s("awready").value) == 0, "the response vanished or a write was accepted as it was taken")
+    await RisingEdge(clk)
+    await ReadOnly()
+    expect(int(s("awready").value) == 1 and int(s("wready").value) == 1, "the slot did not free up once the response was taken")
+    await RisingEdge(clk)                                 # the edge that takes the second write
+    s("awvalid").value = 0
+    s("wvalid").value = 0
+    await ReadOnly()
+    expect(int(s("bvalid").value) == 1 and int(s("bresp").value) == rm.RESP_OKAY, "no response for the second write")
+    await RisingEdge(clk)                                 # second response taken
+    s("bready").value = 0
+    await RisingEdge(clk)
+    second, resp = await axil.read(rm.REG_IRQ_ENABLE)
+    expect(resp == rm.RESP_OKAY and second == 0x6, f"after both writes the register holds 0x{second:X}, expected the second value 0x6")
+    strobes["stop"] = True
+    expect(strobes["n"] == 2, f"{strobes['n']} write-strobe cycles on the register bus for 2 accepted writes")
+    check_monitor(mon)
+    assert not problems, "; ".join(problems)

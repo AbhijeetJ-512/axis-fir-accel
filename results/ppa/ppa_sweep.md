@@ -4,11 +4,11 @@ Build: NTAPS_MAX=64, DATA_W=COEF_W=16, SYMMETRIC_EN=1. Timing-driven ABC mapping
 
 | MAC_UNITS | II (cycles/sample) | cells | area (um^2) | flip-flops | T_min (ns) | F_max (MHz) | throughput (Msamples/s) | method check |
 |---:|---:|---:|---:|---:|---:|---:|---:|---|
-| 1 | 32 | 18409 | 198141 | 3860 | 5.336 | 187.4 | 5.86 | verified (+0.107 / -0.106 ns) |
-| 2 | 16 | 20681 | 222861 | 3964 | 5.416 | 184.6 | 11.54 | verified (+0.108 / -0.108 ns) |
-| 4 | 8 | 25490 | 266065 | 4169 | 5.283 | 189.3 | 23.66 | verified (+0.106 / -0.105 ns) |
-| 8 | 4 | 33306 | 344663 | 4578 | 5.310 | 188.3 | 47.08 | verified (+0.106 / -0.107 ns) |
-| 16 | 2 | 49338 | 487556 | 5392 | 5.278 | 189.5 | 94.73 | verified (+0.106 / -0.105 ns) |
-| 32 | 1 | 77886 | 762919 | 7016 | 5.322 | 187.9 | 187.90 | verified (+0.106 / -0.107 ns) |
+| 1 | 32 | 18662 | 200006 | 3860 | 5.392 | 185.5 | 5.80 | verified (+0.107 / -0.108 ns) |
+| 2 | 16 | 20743 | 222904 | 3964 | 5.460 | 183.2 | 11.45 | verified (+0.109 / -0.109 ns) |
+| 4 | 8 | 25497 | 265551 | 4169 | 5.286 | 189.2 | 23.65 | verified (+0.105 / -0.106 ns) |
+| 8 | 4 | 33370 | 344493 | 4578 | 5.198 | 192.4 | 48.10 | verified (+0.104 / -0.104 ns) |
+| 16 | 2 | 49537 | 486684 | 5392 | 5.266 | 189.9 | 94.95 | verified (+0.105 / -0.106 ns) |
+| 32 | 1 | 77787 | 760277 | 7016 | 5.405 | 185.0 | 185.01 | verified (+0.108 / -0.108 ns) |
 
 Throughput = F_max / II, a derived figure: II = ceil(N_eff / MAC_UNITS) with N_eff = NTAPS_MAX/2 for the symmetric build (documented in docs/03_microarchitecture.md; the cocotb fold-sweep checks bit-exactness at every MAC_UNITS). Worst asynchronous-reset recovery slack at 10 ns, unbuffered reset net (informational, NOT a pass/fail figure): M=1: -32.033 ns, M=2: -35.147 ns, M=4: -41.285 ns, M=8: -53.53 ns, M=16: -77.899 ns, M=32: -126.522 ns

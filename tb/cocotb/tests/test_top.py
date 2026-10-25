@@ -34,6 +34,7 @@ DATA_W = int(os.environ.get("DATA_W", "16"))
 COEF_W = int(os.environ.get("COEF_W", "16"))
 NTAPS_MAX = int(os.environ.get("NTAPS_MAX", "64"))
 MAC_UNITS = int(os.environ.get("MAC_UNITS", "8"))
+IN_FIFO_DEPTH = int(os.environ.get("IN_FIFO_DEPTH", "8"))
 OUT_FIFO_DEPTH = int(os.environ.get("OUT_FIFO_DEPTH", "16"))
 SYMMETRIC_EN = int(os.environ.get("SYMMETRIC_EN", "1"))
 
@@ -361,4 +362,249 @@ async def test_long_random(dut):
             await RisingEdge(dut.aclk)
     dut._log.info(f"{total} samples across 6 configurations: BIT-EXACT "
                   f"(MAC_UNITS={MAC_UNITS})")
+    d.stop()
+
+
+# =============================================================================
+# Tests added with the bound SVA checkers (portfolio work). Each one reaches a situation that the cover points in verif/fir_checkers.sv
+# showed the original suite never produced: a flush or soft reset while samples are inside the IP, the interrupt output, leaving the
+# configuration-error state, back-to-back one-beat frames, commit requests landing on and around a bank swap, and a register read while
+# a write response is still pending. The results are still compared bit for bit with the reference model.
+# =============================================================================
+
+MASK = (1 << DATA_W) - 1
+
+
+@cocotb.test()
+async def test_flush_and_soft_reset_mid_stream(dut):
+    """FR-14: CTRL.FLUSH and CTRL.SOFT_RESET with samples inside the IP. The IP recovers, the credit count is reconciled, and the next
+    frame is bit-exact from a zeroed delay line."""
+    d = await setup(dut, seed=8)
+    rng = random.Random(81)
+    h = [rng.randrange(-(1 << (COEF_W - 3)), 1 << (COEF_W - 3)) for _ in range(8)]
+    await d.configure(8, h, round_mode=RND_TRUNC)
+    # (command, consumer stalled?): stalled fills the output FIFO and exhausts the credits; flowing leaves a pass phase in progress
+    for cmd_bit, stalled in ((rm.CTRL_FLUSH_BIT, True), (rm.CTRL_SOFTRST_BIT, True), (rm.CTRL_FLUSH_BIT, False), (rm.CTRL_SOFTRST_BIT, False)):
+        d.snk.pause = stalled
+        for _ in range(400 if not stalled else 60):
+            d.src.send(rng.randrange(XMIN, XMAX + 1) & MASK)
+        for _ in range(150 if stalled else 61):
+            await RisingEdge(dut.aclk)
+        # command with ENABLE still set, so the FSM leaves RUN abruptly
+        await d.axil.write(rm.REG_CTRL, (1 << rm.CTRL_ENABLE_BIT) | (1 << cmd_bit))
+        d.src.queue.clear()
+        for _ in range(10):
+            await RisingEdge(dut.aclk)
+        d.snk.pause = False
+        # what was buffered at the output leaves (a flush must not withdraw a beat already offered); a beat that was mid-handshake
+        # at the flush is processed normally
+        for _ in range(300):
+            await RisingEdge(dut.aclk)
+        # a second command on an empty datapath guarantees a zeroed delay line, then the model restarts from zero history as well
+        await d.axil.write(rm.REG_CTRL, (1 << rm.CTRL_ENABLE_BIT) | (1 << cmd_bit))
+        for _ in range(12):
+            await RisingEdge(dut.aclk)
+        d.ref.reset()
+        xs = [rng.randrange(XMIN, XMAX + 1) for _ in range(100)]
+        await d.check(xs, f"after CTRL bit {cmd_bit} issued mid-stream (consumer {'stalled' if stalled else 'flowing'})", last_every=25)
+    dut._log.info("flush and soft reset mid-stream: IP recovered, next frames bit-exact")
+    d.stop()
+
+
+@cocotb.test()
+async def test_irq_output(dut):
+    """FR-23, FR-25: the level interrupt follows IRQ_STATUS & IRQ_ENABLE; a saturated output raises SAT_EVENT without disturbing the stream."""
+    d = await setup(dut, seed=9)
+    rng = random.Random(91)
+    await d.configure(4, [1 << (COEF_W - 2), 0, 0, 0], round_mode=RND_TRUNC)
+    await d.axil.write(rm.REG_IRQ_ENABLE, 1 << rm.IRQ_FRAME_DONE_BIT)
+    assert int(dut.irq.value) == 0, "irq high before any event"
+    await d.check([rng.randrange(XMIN, XMAX + 1) for _ in range(16)], "frame for the interrupt", last_every=16)
+    for _ in range(6):
+        await RisingEdge(dut.aclk)
+    assert int(dut.irq.value) == 1, "FRAME_DONE enabled but irq is low after a frame left the IP"
+    sts, _ = await d.axil.read(rm.REG_IRQ_STATUS)
+    assert (sts >> rm.IRQ_FRAME_DONE_BIT) & 1, "IRQ_STATUS.FRAME_DONE not set"
+    await d.axil.write(rm.REG_IRQ_STATUS, 1 << rm.IRQ_FRAME_DONE_BIT)
+    for _ in range(3):
+        await RisingEdge(dut.aclk)
+    assert int(dut.irq.value) == 0, "irq still high after the event was cleared"
+
+    # saturation: two full-scale taps double the input, so large samples clamp (and the stream continues, bit-exact)
+    big = (1 << (COEF_W - 1)) - 1
+    await d.axil.write(rm.REG_CTRL, 0)
+    for _ in range(40):
+        await RisingEdge(dut.aclk)
+    await d.configure(2, [big, big], round_mode=RND_TRUNC, sat_mode=SAT_SYMMETRIC)
+    await d.axil.write(rm.REG_IRQ_ENABLE, 1 << rm.IRQ_SAT_EVENT_BIT)
+    await d.check([XMAX, XMIN, XMAX, XMAX, XMIN, XMIN, 1000, -1000] * 4, "saturating stream", last_every=8)
+    for _ in range(6):
+        await RisingEdge(dut.aclk)
+    assert int(dut.irq.value) == 1, "SAT_EVENT enabled but irq is low after saturation"
+    sts, _ = await d.axil.read(rm.REG_STATUS)
+    assert (sts >> rm.STS_SATSTKY_BIT) & 1, "STATUS.SAT_STICKY not set"
+    await d.axil.write(rm.REG_IRQ_STATUS, 1 << rm.IRQ_SAT_EVENT_BIT)
+    for _ in range(3):
+        await RisingEdge(dut.aclk)
+    assert int(dut.irq.value) == 0
+    d.stop()
+
+
+@cocotb.test()
+async def test_cfg_error_recovery(dut):
+    """FR-21, FR-22: an illegal configuration holds the FSM out of RUN; dropping ENABLE leaves the error state, software clears the sticky
+    flag, and a legal configuration then runs bit-exact."""
+    d = await setup(dut, seed=10)
+    await d.axil.write(rm.REG_CFG, rm.make_cfg(0))
+    await d.axil.write(rm.REG_CTRL, 1 << rm.CTRL_ENABLE_BIT)
+    for _ in range(8):
+        await RisingEdge(dut.aclk)
+    sts, _ = await d.axil.read(rm.REG_STATUS)
+    assert (sts >> rm.STS_CFGERR_BIT) & 1, "STATUS.CFG_ERR not set for NTAPS=0 with ENABLE"
+    await d.axil.write(rm.REG_CTRL, 0)                       # leave the error state
+    for _ in range(8):
+        await RisingEdge(dut.aclk)
+    await d.axil.write(rm.REG_IRQ_STATUS, 1 << rm.IRQ_CFG_ERR_BIT)
+    for _ in range(4):
+        await RisingEdge(dut.aclk)
+    sts, _ = await d.axil.read(rm.REG_STATUS)
+    assert (sts >> rm.STS_CFGERR_BIT) & 1 == 0, "CFG_ERR sticky flag did not clear"
+    rng = random.Random(101)
+    h = [rng.randrange(-(1 << (COEF_W - 3)), 1 << (COEF_W - 3)) for _ in range(8)]
+    await d.configure(8, h)
+    await d.check([rng.randrange(XMIN, XMAX + 1) for _ in range(50)], "after recovering from CFG_ERR", last_every=10)
+    d.stop()
+
+
+@cocotb.test()
+async def test_single_beat_frames(dut):
+    """FR-17: TLAST on every beat (frames of length one), with stalls on both sides."""
+    d = await setup(dut, seed=11)
+    rng = random.Random(111)
+    h = [rng.randrange(-(1 << (COEF_W - 3)), 1 << (COEF_W - 3)) for _ in range(8)]
+    await d.configure(8, h)
+    d.src.stall_prob = 0.3
+    d.snk.stall_prob = 0.5
+    got = await d.check([rng.randrange(XMIN, XMAX + 1) for _ in range(80)], "one-beat frames", last_every=1)
+    assert all(last == 1 for _, last in got), "TLAST missing on a one-beat frame"
+    d.stop()
+
+
+@cocotb.test()
+async def test_commit_churn_during_stream(dut):
+    """FR-10, FR-11: coefficient writes and commit requests while frames stream, including requests that land on or next to a bank swap.
+    The shadow bank always holds the same set, so the output must not depend on when each swap happens."""
+    d = await setup(dut, seed=12)
+    rng = random.Random(121)
+    h = [rng.randrange(-(1 << (COEF_W - 3)), 1 << (COEF_W - 3)) for _ in range(8)]
+    await d.configure(8, h, round_mode=RND_TRUNC)
+
+    async def churn():
+        for _ in range(60):
+            for i, c in enumerate(h):
+                await d.axil.write(rm.coef_addr(i), c & ((1 << COEF_W) - 1))
+            await d.axil.write(rm.REG_CTRL, (1 << rm.CTRL_ENABLE_BIT) | (1 << rm.CTRL_COMMIT_BIT))
+    worker = cocotb.start_soon(churn())
+    d.snk.stall_prob = 0.2
+    await d.check([rng.randrange(XMIN, XMAX + 1) for _ in range(400)], "frames of 4 while committing", last_every=4)
+    await worker
+    d.stop()
+
+
+@cocotb.test()
+async def test_read_while_write_response_pending(dut):
+    """AXI4-Lite: the read channel is independent of a write response that the master has not yet accepted."""
+    d = await setup(dut, seed=13)
+    w = cocotb.start_soon(d.axil.write(rm.REG_IRQ_ENABLE, 0x5, b_delay=20))
+    for _ in range(3):
+        await RisingEdge(dut.aclk)
+    data, resp = await d.axil.read(rm.REG_ID)
+    assert resp == rm.RESP_OKAY and data == rm.IP_ID, f"ID read during a pending B response returned {data:#x}, resp {resp}"
+    assert await w == rm.RESP_OKAY
+    data, resp = await d.axil.read(rm.REG_IRQ_ENABLE)
+    assert data == 0x5, f"IRQ_ENABLE reads {data:#x} after the delayed-response write"
+    d.stop()
+
+
+@cocotb.test()
+async def test_flush_keeps_credit_invariant(dut):
+    """FR-15 after a flush: CTRL.FLUSH with samples still inside the datapath pipeline must leave the credit accounting exact. If it does
+    not, the admission credit overstates the free space of the output FIFO and a long consumer stall then loses beats (the output FIFO
+    ignores backpressure by design, because the credits are supposed to make overflow impossible). Found by a_credit_inv, a_dp_nonneg
+    and a_no_drop in verif/fir_checkers.sv; the stream is compared with the reference model, so a lost beat is a failure here too."""
+    d = await setup(dut, seed=14)
+    rng = random.Random(141)
+    h = [rng.randrange(-(1 << (COEF_W - 3)), 1 << (COEF_W - 3)) for _ in range(8)]
+    await d.configure(8, h, round_mode=RND_TRUNC)
+    # flush three times while samples are flowing through the pipeline (consumer free-running, so the pipeline is full)
+    for _ in range(3):
+        for _ in range(300):
+            d.src.send(rng.randrange(XMIN, XMAX + 1) & MASK)
+        for _ in range(40):
+            await RisingEdge(dut.aclk)
+        await d.axil.write(rm.REG_CTRL, (1 << rm.CTRL_ENABLE_BIT) | (1 << rm.CTRL_FLUSH_BIT))
+        d.src.queue.clear()
+        for _ in range(100):
+            await RisingEdge(dut.aclk)
+    # push eight zero samples so the 8-tap delay line holds zeros and the model can restart from zero history. A second flush must not
+    # be used for this: a flush on an empty datapath reloads the credit counter and would hide the very defect being tested.
+    for _ in range(8):
+        d.src.send(0)
+    for _ in range(200):
+        await RisingEdge(dut.aclk)
+    d.ref.reset()
+    # stall the consumer for a long time while a stream is offered: every admitted sample must still reach the output, in order
+    n = 6 * OUT_FIFO_DEPTH
+    xs = [rng.randrange(XMIN, XMAX + 1) for _ in range(n)]
+    base = len(d.snk.received)
+    d.snk.pause = True
+    for i, x in enumerate(xs):
+        d.src.send(x & MASK, 1 if i % 16 == 15 else 0)
+    for _ in range(40 * OUT_FIFO_DEPTH):
+        await RisingEdge(dut.aclk)
+    d.snk.pause = False
+    for _ in range(20000):
+        await RisingEdge(dut.aclk)
+        if len(d.snk.received) - base >= n:
+            break
+    got = d.snk.received[base:base + n]
+    assert len(got) == n, (f"only {len(got)} of {n} samples came out after flushing mid-stream and stalling the consumer: "
+                           f"beats were lost at the output FIFO because the credit count overstated its free space")
+    d.compare(got, xs, "stream after three mid-stream flushes and a long consumer stall")
+    d.stop()
+
+
+@cocotb.test()
+async def test_full_stall_bounds_buffering(dut):
+    """With the consumer stopped from reset, the IP takes a bounded number of samples and then holds TREADY low. The admission credits cap what is in
+    flight at OUT_FIFO_DEPTH, which is what makes an overflow of the output FIFO impossible, and the input FIFO holds IN_FIFO_DEPTH more. A credit pool larger
+    than the output FIFO would still pass every data check (the beats would be buffered somewhere) and is caught only by this count and by a_out_bound.
+    Releasing the consumer must deliver every accepted sample, in order, bit-exact."""
+    d = await setup(dut, seed=15)
+    rng = random.Random(151)
+    h = [rng.randrange(-(1 << (COEF_W - 3)), 1 << (COEF_W - 3)) for _ in range(8)]
+    await d.configure(8, h, round_mode=RND_TRUNC)
+    n = 8 * OUT_FIFO_DEPTH
+    xs = [rng.randrange(XMIN, XMAX + 1) for _ in range(n)]
+    base = len(d.snk.received)
+    sent0 = len(d.src.sent)
+    d.snk.pause = True
+    for i, x in enumerate(xs):
+        d.src.send(x & MASK, 1 if i % 16 == 15 else 0)
+    for _ in range(80 * OUT_FIFO_DEPTH):                  # long enough for the pool to be used up whatever the fold factor
+        await RisingEdge(dut.aclk)
+    accepted = len(d.src.sent) - sent0
+    dut._log.info(f"consumer stopped: {accepted} samples accepted (credit pool {OUT_FIFO_DEPTH} + input FIFO {IN_FIFO_DEPTH})")
+    assert accepted == OUT_FIFO_DEPTH + IN_FIFO_DEPTH, (
+        f"with the consumer stopped the IP accepted {accepted} samples; the credit pool ({OUT_FIFO_DEPTH}) plus the input FIFO "
+        f"({IN_FIFO_DEPTH}) allow exactly {OUT_FIFO_DEPTH + IN_FIFO_DEPTH}")
+    assert len(d.snk.received) == base, "the stopped consumer received beats"
+    d.snk.pause = False
+    for _ in range(20000):
+        await RisingEdge(dut.aclk)
+        if len(d.snk.received) - base >= n:
+            break
+    got = d.snk.received[base:base + n]
+    assert len(got) == n, f"only {len(got)} of {n} samples came out after the stall"
+    d.compare(got, xs, "stream after a full consumer stall")
     d.stop()

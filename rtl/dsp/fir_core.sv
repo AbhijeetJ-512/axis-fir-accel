@@ -46,7 +46,7 @@ module fir_core #(
 ) (
   input  logic                              clk,
   input  logic                              rst_n,
-  input  logic                              clear,        // flush the delay line
+  input  logic                              clear,        // flush: zero the delay line AND drop every sample still inside the pipeline
 
   // ---- Configuration (static while streaming) -------------------------------
   input  logic [fir_pkg::CFG_NTAPS_W-1:0]   cfg_ntaps,
@@ -201,6 +201,11 @@ module fir_core #(
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       ch_vld <= '0; ch_first <= '0; ch_last <= '0; ch_tlast <= '0;
+    end else if (clear) begin
+      // Portfolio fix (2026-10-21): a flush must also drop the samples that were admitted but have not reached the output yet. Without
+      // this, their results emerge after fir_ctrl and credit_ctr have already been reconciled as if they were gone, so the credit
+      // count ends up above the free space of the output FIFO and a long consumer stall loses beats (verif/as_found/fir_core.sv).
+      ch_vld <= '0;
     end else begin
       ch_vld[0]   <= pass_vld;
       ch_first[0] <= pass_first;
@@ -239,6 +244,8 @@ module fir_core #(
       result_acc   <= '0;
       result_vld   <= 1'b0;
       result_tlast <= 1'b0;
+    end else if (clear) begin
+      result_vld   <= 1'b0;                 // see the control chain above
     end else begin
       if (acc_vld) fold_acc <= acc_next;
       result_vld   <= acc_vld && acc_last;
@@ -265,6 +272,9 @@ module fir_core #(
       out_valid <= 1'b0;
       out_data  <= '0;
       out_last  <= 1'b0;
+      out_sat   <= 1'b0;
+    end else if (clear) begin
+      out_valid <= 1'b0;                    // the beat presented this cycle is still pushed (fir_ctrl / credit_ctr count it); none follows
       out_sat   <= 1'b0;
     end else begin
       out_valid <= result_vld;
