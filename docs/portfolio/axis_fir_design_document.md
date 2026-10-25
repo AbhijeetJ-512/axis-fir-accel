@@ -536,4 +536,4 @@ as a measured experiment, registering every second adder-tree level (fewer flops
 - Directory structure: `rtl/` (15 files), `tb/cocotb/` (drivers, model, four suites), `tb/sv/` (wrappers; `original/` holds the arithmetic
   wrapper from before the repair), `scripts/` (structural checks, width derivation, `run_suite.sh`), `ppa/`, `constraints/`, `results/`,
   `docs/`.
-- To reproduce, use the commands in G.6. There's no source-repository link for this portfolio copy because it hasn't been published.
+- To reproduce, use the commands in G.6. The source is at https://github.com/AbhijeetJ-512/axis-fir-accel.
