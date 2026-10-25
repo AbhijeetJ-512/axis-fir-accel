@@ -1,0 +1,4 @@
+# Driving cell and output load that ABC assumes for the timing-driven mapping (the same values the OpenROAD Sky130HD platform uses
+# for its Yosys flow). They are assumptions about the unit boundary, not measurements.
+set_driving_cell sky130_fd_sc_hd__inv_2
+set_load 0.033442

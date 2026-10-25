@@ -1,0 +1,13 @@
+# ABC script for the timing-driven mapping (SYNTH_ABC=speed, D-041). Best-possible delay, no period target: a target tighter than
+# the tool can reach changes nothing (measured on the L1-I), and a looser one only recovers area.
+# &nf maps for delay, buffer inserts fan-out buffers (the raw netlist has nets with a fan-out of 500), upsize and dnsize resize
+# gates by their real load; stime reports the result.
+&get -n
+&st
+&nf
+&put
+buffer -c
+topo
+stime -c
+upsize
+dnsize

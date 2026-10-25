@@ -55,7 +55,10 @@ SUITE        ?= csr
 CSR_PARAMS := NTAPS_MAX=$(NTAPS_MAX) MAC_UNITS=$(MAC_UNITS) DATA_W=$(DATA_W) \
               COEF_W=$(COEF_W) SYMMETRIC_EN=$(SYMMETRIC_EN)
 
-.PHONY: all check regress csr stream fir fir-full top fold-sweep sweep csr-sweep stream-sweep waves \
+ppa-sweep:
+	@python3 ppa/ppa_sweep.py
+
+.PHONY: ppa-sweep all check regress csr stream fir fir-full top fold-sweep sweep csr-sweep stream-sweep waves \
         elab elab-sweep comb-check verify-widths verify-model tools clean help
 
 all: check

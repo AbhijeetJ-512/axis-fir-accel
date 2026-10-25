@@ -1,0 +1,22 @@
+read_verilog -sv -I @ROOT@/rtl/common @SOURCES@
+read_liberty -lib @LIB@
+chparam -set MAC_UNITS @MU@ -set NTAPS_MAX @NT@ -set DATA_W 16 -set COEF_W 16 -set SYMMETRIC_EN @SE@ axis_fir_top
+hierarchy -check -top axis_fir_top
+proc
+tribuf
+log CHECK no-tribuf
+select -assert-none t:$tribuf t:$_TBUF_
+log PASS no-tribuf
+log CHECK check-rtl
+check -assert
+log PASS check-rtl
+synth -top axis_fir_top -flatten -noabc
+log CHECK no-latch
+select -assert-none t:$*latch* t:$_DLATCH*
+log PASS no-latch
+dfflibmap -liberty @LIB@
+@ABC@
+hilomap -hicell sky130_fd_sc_hd__conb_1 HI -locell sky130_fd_sc_hd__conb_1 LO
+opt_clean -purge
+tee -o @OUT@/stat.txt stat -liberty @LIB@
+write_verilog -noattr @OUT@/synth.v
