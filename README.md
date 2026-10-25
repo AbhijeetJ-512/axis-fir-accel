@@ -281,4 +281,5 @@ formal` (SymbiYosys). The `MAC_UNITS` sweep that `make ppa` was meant to run exi
 
 ## License
 
-TBD.
+MIT, see [`LICENSE`](LICENSE). The Sky130 liberty file in `ppa/lib/` isn't mine and keeps its own license (Apache 2.0, from the
+SkyWater PDK, via OpenROAD's test platform); [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) has the details.
