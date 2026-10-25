@@ -23,7 +23,9 @@ SUITE         ?= csr
 
 TB_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 ROOT   := $(abspath $(TB_DIR)/../..)
-RTL    := $(ROOT)/rtl
+# RTL_DIR: override to build a mutated copy of rtl/ (scripts/sva_mutants.py). No trailing comment: make would keep the spaces in the value.
+RTL_DIR ?= $(ROOT)/rtl
+RTL     := $(RTL_DIR)
 
 COMMON_SOURCES := $(RTL)/common/fir_pkg.sv $(RTL)/common/reset_sync.sv
 
@@ -108,7 +110,7 @@ ifeq ($(SUITE),top)
   IN_FIFO_DEPTH  ?= 8
   OUT_FIFO_DEPTH ?= 16
   SYMMETRIC_EN   ?= 1
-  export DATA_W COEF_W NTAPS_MAX MAC_UNITS OUT_FIFO_DEPTH SYMMETRIC_EN
+  export DATA_W COEF_W NTAPS_MAX MAC_UNITS IN_FIFO_DEPTH OUT_FIFO_DEPTH SYMMETRIC_EN
 
   TOPLEVEL := axis_fir_top
   MODULE   ?= tests.test_top
@@ -135,7 +137,22 @@ ifndef TOPLEVEL
 endif
 
 # ---- Tool arguments ---------------------------------------------------------
+ifeq ($(SIM),verilator)
+  # Verilator >= 5.036 is required by cocotb 2.x; the repository's checkers (verif/) need the source-built 5.052 (sequence delays,
+  # covergroup-capable). Set VERILATOR_BIN_DIR=<verilator-5.052>/bin and VERILATOR_ROOT=<verilator-5.052>. Parameters become -G overrides.
+  COMPILE_ARGS += -I$(RTL)/common --assert --coverage --timing --x-assign unique --x-initial unique \
+                  -Wno-fatal -Wno-DECLFILENAME -Wno-UNUSEDSIGNAL -Wno-UNUSEDPARAM -Wno-WIDTH -Wno-PINCONNECTEMPTY -Wno-UNOPTFLAT \
+                  $(subst -P$(TOPLEVEL).,-G,$(PARAM_ARGS))
+  ifneq ($(NO_CHECKERS),1)
+    CHECKERS ?= $(ROOT)/verif/fir_checkers.sv
+    VERILOG_SOURCES += $(CHECKERS) $(ROOT)/verif/fir_binds.sv
+  endif
+  # +verilator+rand+reset+2 randomises uninitialised state; +verilator+error+limit lets a failing assertion report every label
+  # instead of stopping at the first. Coverage goes to COV_FILE (default coverage.dat in the build directory).
+  PLUSARGS += +verilator+rand+reset+2 +verilator+error+limit+100000 +verilator+coverage+file+$(SIM_BUILD)/coverage.dat
+else
 COMPILE_ARGS += -g2012 -I$(RTL)/common $(PARAM_ARGS)
+endif
 
 ifeq ($(WAVES),1)
     PLUSARGS     += -fst

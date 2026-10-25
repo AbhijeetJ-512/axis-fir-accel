@@ -25,3 +25,6 @@ formal/*/
 # Editor
 .vscode/
 *.swp
+
+# Verilator builds of the checker runs and the mutation campaign
+build/

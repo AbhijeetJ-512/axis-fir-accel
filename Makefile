@@ -18,6 +18,7 @@
 #   make comb-check  structural proof of TR-04 on the elaborated netlist
 #   make check       everything above that gates a phase
 #   make waves       regression with FST waveform dump (SUITE=csr|stream)
+#   make sva         the cocotb suites in 18 configurations under Verilator 5.052 with the bound SVA checkers (verif/); 96 s from a cold start, 20 s once built (7 jobs)
 #   make tools       report which tools are present
 #   make clean       remove simulation and synthesis artefacts
 # -----------------------------------------------------------------------------
@@ -57,6 +58,11 @@ CSR_PARAMS := NTAPS_MAX=$(NTAPS_MAX) MAC_UNITS=$(MAC_UNITS) DATA_W=$(DATA_W) \
 
 ppa-sweep:
 	@python3 ppa/ppa_sweep.py
+
+# Needs the source-built Verilator 5.052 (VERILATOR_5052, default ../../_toolchain/verilator-5.052); not part of `make check`.
+.PHONY: sva
+sva:
+	@python3 $(ROOT)/scripts/run_sva.py
 
 .PHONY: ppa-sweep all check regress csr stream fir fir-full top fold-sweep sweep csr-sweep stream-sweep waves \
         elab elab-sweep comb-check verify-widths verify-model tools clean help
