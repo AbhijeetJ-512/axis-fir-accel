@@ -1,0 +1,8 @@
+mutants: 95, caught 93 (by tests 78, by an assertion only 15), survived 2, invalid 0
+caught ONLY by an assertion (the cocotb tests missed them): M08, M19, M24, M28, M29, M33, M38, M42, Q14, Q19, Q20, Q25, Q28, Q37, Q44
+survivors (each with its reason, confirmed by results/sva/equivalence.txt): Q12, Q17
+assertions defined: 105; fired in at least one mutant run: 105
+assertions that fired in no run: none
+assertions no RTL edit can violate (reason in verif/sva_unviolable.txt): none
+mutants whose expected assertion did not fire (another one did): none
+PROBLEMS: none

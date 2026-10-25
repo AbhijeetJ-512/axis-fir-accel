@@ -19,6 +19,8 @@
 #   make check       everything above that gates a phase
 #   make waves       regression with FST waveform dump (SUITE=csr|stream)
 #   make sva         the cocotb suites in 18 configurations under Verilator 5.052 with the bound SVA checkers (verif/); 96 s from a cold start, 20 s once built (7 jobs)
+#   make sva-mutants the injected-bug campaign for those checkers, 95 mutants (scripts/sva_mutants.py); 1625 s measured with --jobs 7 on 8 cores (the target uses the default of 4 jobs)
+#   make sva-equiv   Yosys proof that the surviving mutants of that campaign are equivalent to the original, with real faults as controls (scripts/check_equivalent.py); 64 s
 #   make tools       report which tools are present
 #   make clean       remove simulation and synthesis artefacts
 # -----------------------------------------------------------------------------
@@ -60,9 +62,15 @@ ppa-sweep:
 	@python3 ppa/ppa_sweep.py
 
 # Needs the source-built Verilator 5.052 (VERILATOR_5052, default ../../_toolchain/verilator-5.052); not part of `make check`.
-.PHONY: sva
+.PHONY: sva sva-mutants sva-equiv
 sva:
 	@python3 $(ROOT)/scripts/run_sva.py
+
+sva-mutants:
+	@python3 $(ROOT)/scripts/sva_mutants.py
+
+sva-equiv:
+	@python3 $(ROOT)/scripts/check_equivalent.py Q12 Q17 Q13 M20 Q16 Q46 Q47 M25
 
 .PHONY: ppa-sweep all check regress csr stream fir fir-full top fold-sweep sweep csr-sweep stream-sweep waves \
         elab elab-sweep comb-check verify-widths verify-model tools clean help

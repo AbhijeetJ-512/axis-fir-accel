@@ -1,0 +1,7 @@
+FIR accelerator: bound checkers under cocotb + Verilator 5.052 (18 runs, unmodified RTL)
+runs                      : 18, all tests passed and no assertion fired: yes
+assertions defined        : 105 labelled (101 concurrent, 4 procedural scoreboard checks)
+conditional assertions    : 80, antecedent reached in at least one run: 80
+cover bins                : 81, hit: 81, zero: 0 (excluded with a reason: 0)
+note                      : gen_vacuity: 80 conditional assertions got an antecedent cover; 20 unconditional (never vacuous): a_ren_is_hs, a_count_range, a_full_def, a_empty_def, a_tready_def, a_tvalid_def, a_range, a_have_def, a_status_busy, a_status_drain, a_consume_def, a_ready_eq, a_shift_eq, a_pass_first, a_pass_last, a_tap_base, a_illegal_def, a_irq_level, a_credit_inv, a_out_bound
+problems                  : none

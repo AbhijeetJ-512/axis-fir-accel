@@ -1,0 +1,106 @@
+mutants: 95, caught 93 (by tests 78, by an assertion only 15), survived 2, invalid 0
+caught ONLY by an assertion (the cocotb tests missed them): M08, M19, M24, M28, M29, M33, M38, M42, Q14, Q19, Q20, Q25, Q28, Q37, Q44
+survivors (each with its reason, confirmed by results/sva/equivalence.txt): Q12, Q17
+assertions defined: 105; fired in at least one mutant run: 105
+assertions that fired in no run: none
+assertions no RTL edit can violate (reason in verif/sva_unviolable.txt): none
+mutants whose expected assertion did not fire (another one did): none
+PROBLEMS: none
+
+M01  KILLED by tests              AXI-Lite: the write response is dropped without waiting for BREADY                         assert-fired: a_b_hold
+M02  KILLED by tests              AXI-Lite: the read response is dropped without waiting for RREADY                          assert-fired: a_r_hold
+M03  KILLED by tests              AXI-Lite: a refused write is answered OKAY                                                 assert-fired: a_bresp_err
+M04  KILLED by tests              AXI-Lite: a read of an unmapped address is answered OKAY                                   assert-fired: a_rresp_err
+M05  KILLED by tests              AXI-Lite: ARREADY ignores an unanswered read                                               assert-fired: a_r_blocks_rd
+M06  KILLED by tests              AXI-Lite: a new write is accepted while a response is outstanding                          assert-fired: a_b_blocks_wr,a_wen_gives_b,a_wen_pulse,a_wen_slot_free
+M07  KILLED by tests              AXI-Lite: the register read strobe follows ARVALID, not the handshake                      assert-fired: a_ren_is_hs,a_ren_pulse
+M08  KILLED by an assertion only  FIFO: TREADY depends on the consumer's TREADY (and accepts a beat when full)               assert-fired: a_tready_def
+M09  KILLED by tests              FIFO: TVALID is raised for a beat that is not stored yet                                   assert-fired: a_hold,a_m_hold,a_tvalid_def,sb_fifo_not_empty,sb_order,sb_tlast_index
+M10  KILLED by tests              FIFO: full and empty are confused (the wrap bit is compared the wrong way)                 assert-fired: a_full_def
+M11  KILLED by tests              FIFO: a flush leaves the read pointer where it was                                         assert-fired: a_count_range,a_count_step,a_flush_empty,a_hold,sb_fifo_not_empty,sb_order
+M12  KILLED by tests              FIFO: a beat is popped whether or not the consumer took it                                 assert-fired: a_count_step,a_credit_inv,a_hold,a_m_hold,sb_order
+M13  KILLED by tests              FIFO: TLAST is not stored                                                                  assert-fired: sb_order
+M14  KILLED by tests              credit counter: a credit is never returned                                                 assert-fired: a_credit_inv,a_step
+M15  KILLED by tests              credit counter: a credit is never spent                                                    assert-fired: a_credit_inv,a_no_drop,a_range,a_return_room,a_step,rtl:credit_ctr: restore with all credits alr,sb_tlast_index
+M16  KILLED by tests              credit counter: the last credit can never be used                                          assert-fired: a_have_def
+M17  KILLED by tests              credit counter: a flush reloads the maximum instead of the reconciled value                assert-fired: a_credit_inv,a_no_drop,a_range,a_reload,a_return_room,a_step,rtl:credit_ctr: restore with all credits alr,sb_tlast_index
+M18  KILLED by tests              credit counter: reset starts one credit short                                              assert-fired: a_credit_inv,a_reset_full
+M19  KILLED by an assertion only  control: a new sample waits a cycle after the last pass (initiation interval one cycle too assert-fired: a_consume_def
+M20  KILLED by tests              control: the delay line shifts once per PASS instead of once per sample (design risk R3)   assert-fired: a_shift_eq
+M21  KILLED by tests              control: a sample is admitted without a credit                                             assert-fired: a_consume_def,a_credit_inv,a_no_drop,a_range,a_return_room,a_spend_needs,a_step,rtl:credit_ctr: consume asserted with zero c,rtl:credit_ctr: restore with all credits alr,sb_tlast_index
+M22  KILLED by tests              control: samples are admitted in any FSM state                                             assert-fired: a_consume_def,a_only_running
+M23  KILLED by tests              control: TLAST is captured at the last pass instead of at admission                        assert-fired: a_tlast_cap,a_tlast_hold,sb_tlast_index
+M24  KILLED by an assertion only  control: DRAIN ends while results are still in the datapath                                assert-fired: a_drain_wait,a_idle_empty
+M25  KILLED by tests              control: an illegal configuration is allowed to run                                        assert-fired: a_idle_to_err
+M26  KILLED by tests              control: the in-flight count is never decremented                                          assert-fired: a_credit_inv,a_dp_nonneg
+M27  KILLED by tests              control: the tap base advances by one tap per pass instead of MAC_UNITS                    assert-fired: a_tap_base
+M28  KILLED by an assertion only  control: a flush leaves the in-flight count stale                                          assert-fired: a_credit_inv,a_dp_nonneg,a_idle_empty,a_soft_idle,sb_beat_has_sample
+M29  KILLED by an assertion only  control: STATUS.BUSY is low while draining or in the error state                           assert-fired: a_idle_empty,a_status_busy
+M30  KILLED by tests              coefficients: a commit never takes effect at a frame boundary while streaming              assert-fired: a_pend_clear,a_swap_occurs
+M31  KILLED by tests              coefficients: a commit swaps the bank immediately, even inside a frame                     assert-fired: a_active_still,a_pend_hold,a_swap_cause,a_swap_window
+M32  KILLED by tests              coefficients: software writes land in the ACTIVE bank                                      assert-fired: a_active_still
+M33  KILLED by an assertion only  coefficients: a commit arriving on the swap cycle is lost                                  assert-fired: a_pend_resub
+M34  KILLED by tests              registers: a CFG write while BUSY is accepted                                              assert-fired: a_cfg_busy_err,a_cfg_busy_keep
+M35  KILLED by tests              registers: a write to an unmapped address is answered OKAY                                 assert-fired: a_unmapped_w
+M36  KILLED by tests              registers: the reserved rounding mode is not an illegal configuration                      assert-fired: a_illegal_def
+M37  KILLED by tests              registers: the interrupt ignores IRQ_ENABLE                                                assert-fired: a_irq_level
+M38  KILLED by an assertion only  registers: CFG_ERR is not sticky                                                           assert-fired: a_cfgerr_stick
+M39  KILLED by tests              registers: SAT_STICKY is not sticky                                                        assert-fired: a_sat_stick
+M40  KILLED by tests              registers: the sample counter counts frames                                                assert-fired: a_sample_cnt
+M41  KILLED by tests              top: a flush does not reconcile the credits with the beats still in the output FIFO        assert-fired: a_credit_inv,a_no_drop,a_range,a_return_room,a_step,rtl:credit_ctr: restore with all credits alr,sb_tlast_index
+M42  KILLED by an assertion only  top: the frame boundary is taken when TLAST enters the output FIFO, not when it leaves     assert-fired: a_swap_window
+M43  KILLED by tests              top: CTRL.FLUSH does nothing                                                               assert-fired: -
+M44  KILLED by tests              delay line: the samples never move along the line                                          assert-fired: a_shift_move
+M45  KILLED by tests              datapath: a flush does not clear the delay line (FR-04)                                    assert-fired: -
+M46  KILLED by tests              output stage: the two saturation modes are swapped                                         assert-fired: a_sat_on_bound,a_sym_range
+M47  KILLED by tests              output stage: negative saturation is not reported                                          assert-fired: -
+M48  KILLED by tests              datapath: the flush does not drop samples still in the pipeline (the defect found by this  assert-fired: a_credit_inv,a_dp_nonneg,a_no_drop,a_range,a_return_room,rtl:credit_ctr: restore with all credits alr,sb_beat_has_sample,sb_tlast_index
+Q01  KILLED by tests              AXI-Lite: a write response is issued as soon as the address arrives, before the data       assert-fired: a_b_after_wen
+Q02  KILLED by tests              AXI-Lite: a refused write gets no response                                                 assert-fired: a_wen_gives_b
+Q03  KILLED by tests              AXI-Lite: RVALID follows ARVALID combinationally                                           assert-fired: a_r_after_ar,a_r_blocks_rd,a_r_hold
+Q04  KILLED by tests              AXI-Lite: a read of an unmapped address gets no response                                   assert-fired: a_ar_gives_r
+Q05  KILLED by tests              AXI-Lite: the write enable never goes away (the halves stay held, no response)             assert-fired: a_wen_gives_b,a_wen_pulse
+Q06  KILLED by tests              AXI-Lite: a refused write is answered DECERR                                               assert-fired: a_bresp_err,a_bresp_legal
+Q07  KILLED by tests              AXI-Lite: every write is answered SLVERR                                                   assert-fired: a_bresp_ok
+Q08  KILLED by tests              AXI-Lite: a read of an unmapped address is answered DECERR                                 assert-fired: a_rresp_err,a_rresp_legal
+Q09  KILLED by tests              AXI-Lite: every read is answered SLVERR                                                    assert-fired: a_rresp_ok
+Q10  KILLED by tests              AXI-Lite: reset leaves a write response pending                                            assert-fired: a_reset_quiet
+Q11  KILLED by tests              FIFO: a full FIFO reads as empty (the wrap bit is ignored)                                 assert-fired: a_empty_def,a_hold
+Q12  SURVIVED                     control: a flush command wakes the idle FSM                                                assert-fired: -
+      equivalent: fir_ctrl takes its soft_clear branch (state <= IDLE) whenever cmd_flush is high, because axis_fir_top ties soft_clear = cmd_soft_reset | cmd_flush; state_n, the only thing the edit changes, is not used in that cycle. The flush term in fir_ctrl's next-state logic is dead logic.
+Q13  KILLED by tests              control: enabling goes to the drain state instead of RUN                                   assert-fired: a_idle_to_run
+Q14  KILLED by an assertion only  control: the error state is left when input data arrives                                   assert-fired: a_err_hold
+Q15  KILLED by tests              control: the error state is left only when the configuration is legal as well              assert-fired: a_err_exit
+Q16  KILLED by tests              control: RUN drops to DRAIN whenever the input stalls                                      assert-fired: a_run_stay
+Q17  SURVIVED                     control: a flush command does not leave RUN                                                assert-fired: -
+      equivalent: same reason as Q12 (the flush term of the RUN arm is overridden by soft_clear in the cycle cmd_flush is high); ENABLE dropping still leaves RUN.
+Q18  KILLED by tests              control: DRAIN does not finish while the input still has data                              assert-fired: a_drain_done
+Q19  KILLED by an assertion only  control: STATUS.DRAINING is low in DRAIN once the datapath is empty                        assert-fired: a_status_drain
+Q20  KILLED by an assertion only  control: TREADY does not wait for TVALID (legal AXI-Stream, but not the consume strobe)    assert-fired: a_ready_eq
+Q21  KILLED by tests              control: the first sample after a TLAST sample is consumed but gets no pass phase          assert-fired: a_pass_start,sb_tlast_index
+Q22  KILLED by tests              control: pass_first is low for a sample that follows TLAST                                 assert-fired: a_pass_first,a_pass_start
+Q23  KILLED by tests              control: pass_last is low for the TLAST sample                                             assert-fired: a_pass_last,a_pass_step,sb_tlast_index
+Q24  KILLED by tests              control: the pass counter skips a pass                                                     assert-fired: a_pass_bound,a_pass_step,a_tap_base
+Q25  KILLED by an assertion only  control: the pass phase runs one pass too many                                             assert-fired: a_pass_bound,a_pass_last
+Q26  KILLED by tests              control: the pass phase restarts after the last pass although no sample was admitted       assert-fired: a_credit_inv,a_dp_nonneg,a_no_drop,a_pass_end,a_range,a_return_room,a_step,rtl:credit_ctr: restore with all credits alr,sb_beat_has_sample,sb_tlast_index
+Q27  KILLED by tests              coefficients: a commit that cannot swap at once is forgotten                               assert-fired: a_pend_set
+Q28  KILLED by an assertion only  coefficients: reset selects bank 1 as the active bank                                      assert-fired: a_reset_bank
+Q29  KILLED by tests              registers: a read of an unmapped address is flagged OKAY by the register file              assert-fired: a_unmapped_r
+Q30  KILLED by tests              registers: a write to a read-only register is refused                                      assert-fired: a_mapped_w
+Q31  KILLED by tests              registers: a read of FRAME_CNT is flagged as an error                                      assert-fired: a_mapped_r
+Q32  KILLED by tests              registers: a write to an unmapped address changes the rounding mode                        assert-fired: a_cfg_busy_keep,a_unmapped_keep
+Q33  KILLED by tests              registers: the ID register reads back a wrong constant                                     assert-fired: a_id_const
+Q34  KILLED by tests              registers: STATUS.CFG_ERR is set only when its interrupt is enabled                        assert-fired: a_cfgerr_set
+Q35  KILLED by tests              registers: STATUS.SAT_STICKY is set only when its interrupt is enabled                     assert-fired: a_sat_set
+Q36  KILLED by tests              registers: the frame-done status bit is set only when its interrupt is enabled             assert-fired: a_frame_event
+Q37  KILLED by an assertion only  registers: the CFG_ERR status bit is set only when its interrupt is enabled                assert-fired: a_cfgerr_event
+Q38  KILLED by tests              registers: the flush command is not a pulse (it stays until the register is written again) assert-fired: a_cmd_pulse
+Q39  KILLED by tests              registers: the frame counter counts samples                                                assert-fired: a_frame_cnt
+Q40  KILLED by tests              registers: CNT_CLR does not clear the frame counter                                        assert-fired: a_cnt_clear
+Q41  KILLED by tests              delay line: a clear leaves the samples where they are                                      assert-fired: a_clear_zero
+Q42  KILLED by tests              delay line: the line shifts on every clock                                                 assert-fired: a_taps_hold
+Q43  KILLED by tests              delay line: the newest sample enters with its low bit inverted                             assert-fired: a_shift_in
+Q44  KILLED by an assertion only  delay line: reset fills the line with ones                                                 assert-fired: a_reset_zero
+Q45  KILLED by tests              credits: a pool four larger than OUT_FIFO_DEPTH and an output FIFO twice as deep (works, b assert-fired: a_credit_inv,a_out_bound
+Q46  KILLED by tests              control: the idle FSM starts on input data without ENABLE                                  assert-fired: a_idle_stay
+Q47  KILLED by tests              control: RUN is not left when ENABLE is dropped                                            assert-fired: a_run_to_drain

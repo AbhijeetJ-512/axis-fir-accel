@@ -1,0 +1,19 @@
+# Yosys 0.33 check of mutants against the original axis_fir_top (flattened): method induct: every register and port paired by name, equiv_simple + equiv_induct (an unbounded proof when every pair is proved)
+# parameters: DATA_W=4, COEF_W=4, NTAPS_MAX=2, MAC_UNITS=1, IN_FIFO_DEPTH=2, OUT_FIFO_DEPTH=8, SYMMETRIC_EN=1
+
+Q12  PROVED EQUIVALENT                                  control: a flush command wakes the idle FSM
+      Of those cells 391 are proven and 0 are unproven.
+Q17  PROVED EQUIVALENT                                  control: a flush command does not leave RUN
+      Of those cells 391 are proven and 0 are unproven.
+Q13  NOT PROVED                                         control: enabling goes to the drain state instead of RUN
+      Of those cells 389 are proven and 2 are unproven.
+M20  NOT PROVED                                         control: the delay line shifts once per PASS instead of once per sample (design risk R3)
+      Of those cells 383 are proven and 8 are unproven.
+Q16  NOT PROVED                                         control: RUN drops to DRAIN whenever the input stalls
+      Of those cells 389 are proven and 2 are unproven.
+Q46  NOT PROVED                                         control: the idle FSM starts on input data without ENABLE
+      Of those cells 389 are proven and 2 are unproven.
+Q47  NOT PROVED                                         control: RUN is not left when ENABLE is dropped
+      Of those cells 389 are proven and 2 are unproven.
+M25  NOT PROVED                                         control: an illegal configuration is allowed to run
+      Of those cells 390 are proven and 1 are unproven.

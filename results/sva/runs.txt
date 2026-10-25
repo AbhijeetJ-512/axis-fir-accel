@@ -1,0 +1,20 @@
+# one line per (suite, parameter set): cocotb summary, then any assertion that fired
+
+csr_n64_m8_s1            ok     tests 18, pass 18, fail 0   assertions fired: none
+csr_n32_m4_s1            ok     tests 18, pass 18, fail 0   assertions fired: none
+csr_n16_m8_s1            ok     tests 18, pass 18, fail 0   assertions fired: none
+csr_n128_m16_s1          ok     tests 18, pass 18, fail 0   assertions fired: none
+csr_n256_m1_s0           ok     tests 18, pass 18, fail 0   assertions fired: none
+stream_d16_i8_o8_p4      ok     tests 12, pass 12, fail 0   assertions fired: none
+stream_d16_i2_o4_p2      ok     tests 12, pass 12, fail 0   assertions fired: none
+stream_d16_i4_o32_p16    ok     tests 12, pass 12, fail 0   assertions fired: none
+stream_d8_i8_o8_p1       ok     tests 12, pass 12, fail 0   assertions fired: none
+stream_d32_i16_o16_p8    ok     tests 12, pass 12, fail 0   assertions fired: none
+fir_n16                  ok     tests 12, pass 12, fail 0   assertions fired: none
+fir_n64                  ok     tests 12, pass 12, fail 0   assertions fired: none
+top_m1                   ok     tests 15, pass 15, fail 0   assertions fired: none
+top_m2                   ok     tests 15, pass 15, fail 0   assertions fired: none
+top_m4                   ok     tests 15, pass 15, fail 0   assertions fired: none
+top_m8                   ok     tests 15, pass 15, fail 0   assertions fired: none
+top_m16                  ok     tests 15, pass 15, fail 0   assertions fired: none
+top_m32                  ok     tests 15, pass 15, fail 0   assertions fired: none
