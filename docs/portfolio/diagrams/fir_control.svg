@@ -1,0 +1,562 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="936pt" height="547.2pt" viewBox="0 0 936 547.2" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-10-21T04:33:09.073342</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 547.2 
+L 936 547.2 
+L 936 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 18.72 360 
+L 917.28 360 
+Q 921.6 360 921.6 364.32 
+L 921.6 517.68 
+Q 921.6 522 917.28 522 
+L 18.72 522 
+Q 14.4 522 14.4 517.68 
+L 14.4 364.32 
+Q 14.4 360 18.72 360 
+L 18.72 360 
+z
+" clip-path="url(#p8d163f209a)" style="fill: none; stroke-dasharray: 7.8,5.2; stroke-dashoffset: 0; stroke: #888888; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 501.12 36 
+L 917.28 36 
+Q 921.6 36 921.6 40.32 
+L 921.6 334.08 
+Q 921.6 338.4 917.28 338.4 
+L 501.12 338.4 
+Q 496.8 338.4 496.8 334.08 
+L 496.8 40.32 
+Q 496.8 36 501.12 36 
+L 501.12 36 
+z
+" clip-path="url(#p8d163f209a)" style="fill: none; stroke-dasharray: 7.8,5.2; stroke-dashoffset: 0; stroke: #888888; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 18.72 36 
+L 470.88 36 
+Q 475.2 36 475.2 40.32 
+L 475.2 334.08 
+Q 475.2 338.4 470.88 338.4 
+L 18.72 338.4 
+Q 14.4 338.4 14.4 334.08 
+L 14.4 40.32 
+Q 14.4 36 18.72 36 
+L 18.72 36 
+z
+" clip-path="url(#p8d163f209a)" style="fill: none; stroke-dasharray: 7.8,5.2; stroke-dashoffset: 0; stroke: #888888; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_1">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: start; fill: #555555" x="20.16" y="515.785957" transform="rotate(-0 20.16 515.785957)">coefficient reload: atomic at a frame boundary</text>
+   </g>
+   <g id="text_2">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: start; fill: #555555" x="502.56" y="332.185957" transform="rotate(-0 502.56 332.185957)">credit_ctr - why the output FIFO can never overflow</text>
+   </g>
+   <g id="text_3">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: start; fill: #555555" x="20.16" y="332.185957" transform="rotate(-0 20.16 332.185957)">fir_ctrl run FSM</text>
+   </g>
+   <g id="patch_5">
+    <path d="M 58.32 72 
+L 157.68 72 
+Q 172.8 72 172.8 87.12 
+L 172.8 107.28 
+Q 172.8 122.4 157.68 122.4 
+L 58.32 122.4 
+Q 43.2 122.4 43.2 107.28 
+L 43.2 87.12 
+Q 43.2 72 58.32 72 
+z
+" clip-path="url(#p8d163f209a)" style="fill: #e1d5e7; stroke: #9673a6; stroke-width: 1.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 339.12 72 
+L 445.68 72 
+Q 460.8 72 460.8 87.12 
+L 460.8 107.28 
+Q 460.8 122.4 445.68 122.4 
+L 339.12 122.4 
+Q 324 122.4 324 107.28 
+L 324 87.12 
+Q 324 72 339.12 72 
+z
+" clip-path="url(#p8d163f209a)" style="fill: #e1d5e7; stroke: #9673a6; stroke-width: 1.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 339.12 216 
+L 445.68 216 
+Q 460.8 216 460.8 231.12 
+L 460.8 251.28 
+Q 460.8 266.4 445.68 266.4 
+L 339.12 266.4 
+Q 324 266.4 324 251.28 
+L 324 231.12 
+Q 324 216 339.12 216 
+z
+" clip-path="url(#p8d163f209a)" style="fill: #e1d5e7; stroke: #9673a6; stroke-width: 1.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 58.32 216 
+L 157.68 216 
+Q 172.8 216 172.8 231.12 
+L 172.8 251.28 
+Q 172.8 266.4 157.68 266.4 
+L 58.32 266.4 
+Q 43.2 266.4 43.2 251.28 
+L 43.2 231.12 
+Q 43.2 216 58.32 216 
+z
+" clip-path="url(#p8d163f209a)" style="fill: #e1d5e7; stroke: #9673a6; stroke-width: 1.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_9">
+    <path d="M 523.008 72 
+L 693.792 72 
+Q 698.4 72 698.4 76.608 
+L 698.4 124.992 
+Q 698.4 129.6 693.792 129.6 
+L 523.008 129.6 
+Q 518.4 129.6 518.4 124.992 
+L 518.4 76.608 
+Q 518.4 72 523.008 72 
+z
+" clip-path="url(#p8d163f209a)" style="fill: #ffe6cc; stroke: #d79b00; stroke-width: 1.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_10">
+    <path d="M 727.2 72 
+L 900 72 
+L 900 129.6 
+L 727.2 129.6 
+z
+" clip-path="url(#p8d163f209a)" style="fill: #dae8fc; stroke: #6c8ebf; stroke-width: 1.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_11">
+    <path d="M 727.2 154.8 
+L 900 154.8 
+L 900 212.4 
+L 727.2 212.4 
+z
+" clip-path="url(#p8d163f209a)" style="fill: #dae8fc; stroke: #6c8ebf; stroke-width: 1.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_12">
+    <path d="M 523.872 237.6 
+L 894.528 237.6 
+Q 900 237.6 900 243.072 
+L 900 300.528 
+Q 900 306 894.528 306 
+L 523.872 306 
+Q 518.4 306 518.4 300.528 
+L 518.4 243.072 
+Q 518.4 237.6 523.872 237.6 
+z
+" clip-path="url(#p8d163f209a)" style="fill: #d5e8d4; stroke: #82b366; stroke-width: 1.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_13">
+    <path d="M 36 392.4 
+L 216 392.4 
+L 216 450 
+L 36 450 
+z
+" clip-path="url(#p8d163f209a)" style="fill: #dae8fc; stroke: #6c8ebf; stroke-width: 1.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_14">
+    <path d="M 252 392.4 
+L 432 392.4 
+L 432 450 
+L 252 450 
+z
+" clip-path="url(#p8d163f209a)" style="fill: #dae8fc; stroke: #6c8ebf; stroke-width: 1.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_15">
+    <path d="M 568.8 388.8 
+L 676.8 421.2 
+L 568.8 453.6 
+L 460.8 421.2 
+z
+" clip-path="url(#p8d163f209a)" style="fill: #fff2cc; stroke: #d6b656; stroke-width: 1.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_16">
+    <path d="M 717.408 392.4 
+L 895.392 392.4 
+Q 900 392.4 900 397.008 
+L 900 445.392 
+Q 900 450 895.392 450 
+L 717.408 450 
+Q 712.8 450 712.8 445.392 
+L 712.8 397.008 
+Q 712.8 392.4 717.408 392.4 
+z
+" clip-path="url(#p8d163f209a)" style="fill: #d5e8d4; stroke: #82b366; stroke-width: 1.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_17">
+    <path d="M 460.8 471.6 
+L 676.8 471.6 
+L 676.8 506.16 
+L 460.8 506.16 
+z
+" clip-path="url(#p8d163f209a)" style="fill: #ffffcc; stroke: #999933; stroke-width: 1.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_18">
+    <path d="M 786.24 2.88 
+L 915.84 2.88 
+L 915.84 38.88 
+L 786.24 38.88 
+z
+" clip-path="url(#p8d163f209a)" style="fill: #ffffff; stroke: #bbbbbb; stroke-width: 0.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="line2d_1">
+    <path d="M 172.8 87.12 
+L 324 87.12 
+" clip-path="url(#p8d163f209a)" style="fill: none; stroke: #222222; stroke-width: 1.8"/>
+   </g>
+   <g id="line2d_2">
+    <path d="M 392.4 122.4 
+L 392.4 216 
+" clip-path="url(#p8d163f209a)" style="fill: none; stroke: #222222; stroke-width: 1.8"/>
+   </g>
+   <g id="line2d_3">
+    <path d="M 324 241.2 
+L 237.6 241.2 
+L 237.6 112.32 
+L 172.8 112.32 
+" clip-path="url(#p8d163f209a)" style="fill: none; stroke: #222222; stroke-width: 1.8"/>
+   </g>
+   <g id="line2d_4">
+    <path d="M 82.08 122.4 
+L 82.08 216 
+" clip-path="url(#p8d163f209a)" style="fill: none; stroke: #222222; stroke-width: 1.8"/>
+   </g>
+   <g id="line2d_5">
+    <path d="M 140.4 216 
+L 140.4 122.4 
+" clip-path="url(#p8d163f209a)" style="fill: none; stroke: #222222; stroke-width: 1.8"/>
+   </g>
+   <g id="line2d_6">
+    <path d="M 727.2 100.8 
+L 698.4 100.8 
+" clip-path="url(#p8d163f209a)" style="fill: none; stroke-dasharray: 10.8,7.2; stroke-dashoffset: 0; stroke: #c55a11; stroke-width: 1.8"/>
+   </g>
+   <g id="line2d_7">
+    <path d="M 727.2 183.6 
+L 608.4 183.6 
+L 608.4 129.6 
+" clip-path="url(#p8d163f209a)" style="fill: none; stroke-dasharray: 10.8,7.2; stroke-dashoffset: 0; stroke: #c55a11; stroke-width: 1.8"/>
+   </g>
+   <g id="line2d_8">
+    <path d="M 216 421.2 
+L 252 421.2 
+" clip-path="url(#p8d163f209a)" style="fill: none; stroke: #222222; stroke-width: 1.8"/>
+   </g>
+   <g id="line2d_9">
+    <path d="M 432 421.2 
+L 460.8 421.2 
+" clip-path="url(#p8d163f209a)" style="fill: none; stroke: #222222; stroke-width: 1.8"/>
+   </g>
+   <g id="line2d_10">
+    <path d="M 676.8 421.2 
+L 712.8 421.2 
+" clip-path="url(#p8d163f209a)" style="fill: none; stroke: #222222; stroke-width: 1.8"/>
+   </g>
+   <g id="line2d_11">
+    <path d="M 568.8 453.6 
+L 568.8 471.6 
+" clip-path="url(#p8d163f209a)" style="fill: none; stroke: #222222; stroke-width: 1.8"/>
+   </g>
+   <g id="line2d_12">
+    <path d="M 792 11.52 
+L 817.92 11.52 
+" clip-path="url(#p8d163f209a)" style="fill: none; stroke: #222222; stroke-width: 1.8; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_13">
+    <path d="M 792 25.92 
+L 817.92 25.92 
+" clip-path="url(#p8d163f209a)" style="fill: none; stroke-dasharray: 10.8,7.2; stroke-dashoffset: 0; stroke: #c55a11; stroke-width: 1.8"/>
+   </g>
+   <g id="text_4">
+    <text style="font-weight: 700; font-size: 15px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: middle; fill: #111111" x="468" y="19.721836" transform="rotate(-0 468 19.721836)">axis_fir_accel - control and credit flow</text>
+   </g>
+   <g id="text_5">
+    <text style="font-weight: 700; font-size: 9.75px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: middle; fill: #111111" x="108" y="89.637686" transform="rotate(-0 108 89.637686)">IDLE</text>
+   </g>
+   <g id="text_6">
+    <text style="font-size: 8.25px; font-family: 'Liberation Sans', 'DejaVu Sans'; fill: #333333" transform="translate(76.356094 100.480107)">nothing admitted;</text>
+    <text style="font-size: 8.25px; font-family: 'Liberation Sans', 'DejaVu Sans'; fill: #333333" transform="translate(88.742051 110.264092)">reset state</text>
+   </g>
+   <g id="text_7">
+    <text style="font-weight: 700; font-size: 9.75px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: middle; fill: #111111" x="392.4" y="89.589697" transform="rotate(-0 392.4 89.589697)">RUN</text>
+   </g>
+   <g id="text_8">
+    <text style="font-size: 8.25px; font-family: 'Liberation Sans', 'DejaVu Sans'; fill: #333333" transform="translate(360.535664 101.295439)">admit while credit</text>
+    <text style="font-size: 8.25px; font-family: 'Liberation Sans', 'DejaVu Sans'; fill: #333333" transform="translate(351.81 110.586357)">and data are available</text>
+   </g>
+   <g id="text_9">
+    <text style="font-weight: 700; font-size: 9.75px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: middle; fill: #111111" x="392.4" y="233.637686" transform="rotate(-0 392.4 233.637686)">DRAIN</text>
+   </g>
+   <g id="text_10">
+    <text style="font-size: 8.25px; font-family: 'Liberation Sans', 'DejaVu Sans'; fill: #333333" transform="translate(348.153574 244.480107)">finish admitted samples,</text>
+    <text style="font-size: 8.25px; font-family: 'Liberation Sans', 'DejaVu Sans'; fill: #333333" transform="translate(357.77707 254.586357)">admit no new ones</text>
+   </g>
+   <g id="text_11">
+    <text style="font-weight: 700; font-size: 9.75px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: middle; fill: #111111" x="108" y="233.639971" transform="rotate(-0 108 233.639971)">CFGERR</text>
+   </g>
+   <g id="text_12">
+    <text style="font-size: 8.25px; font-family: 'Liberation Sans', 'DejaVu Sans'; fill: #333333" transform="translate(70.6275 244.480107)">illegal CFG enabled;</text>
+    <text style="font-size: 8.25px; font-family: 'Liberation Sans', 'DejaVu Sans'; fill: #333333" transform="translate(69.955254 253.771025)">sticky CFG_ERR, irq</text>
+   </g>
+   <g id="text_13">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: middle; fill: #111111" x="608.4" y="93.195117" transform="rotate(-0 608.4 93.195117)">credits  (reset = OUT_FIFO_DEPTH)</text>
+   </g>
+   <g id="text_14">
+    <text style="font-size: 7.5px; font-family: 'Liberation Sans', 'DejaVu Sans'; fill: #333333" transform="translate(563.797852 103.934355)">have_credit = (credits != 0)</text>
+    <text style="font-size: 7.5px; font-family: 'Liberation Sans', 'DejaVu Sans'; fill: #333333" transform="translate(531.690234 112.378887)">consume and restore in one cycle: unchanged</text>
+   </g>
+   <g id="text_15">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: middle; fill: #111111" x="813.6" y="97.882617" transform="rotate(-0 813.6 97.882617)">consume  (-1)</text>
+   </g>
+   <g id="text_16">
+    <text style="font-size: 7.5px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: middle; fill: #333333" x="813.6" y="108.620098" transform="rotate(-0 813.6 108.620098)">fir_ctrl admits a sample</text>
+   </g>
+   <g id="text_17">
+    <text style="font-weight: 700; font-size: 8.25px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: middle; fill: #111111" x="813.6" y="181.003857" transform="rotate(-0 813.6 181.003857)">restore  (+1)</text>
+   </g>
+   <g id="text_18">
+    <text style="font-size: 6.75px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: middle; fill: #333333" x="813.6" y="190.803838" transform="rotate(-0 813.6 190.803838)">out_pop = m_axis_tvalid &amp;&amp; m_axis_tready</text>
+   </g>
+   <g id="text_19">
+    <text style="font-weight: 700; font-size: 8.25px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: middle; fill: #111111" x="709.2" y="261.581689" transform="rotate(-0 709.2 261.581689)">Invariant</text>
+   </g>
+   <g id="text_20">
+    <text style="font-size: 6.75px; font-family: 'Liberation Sans', 'DejaVu Sans'; fill: #333333" transform="translate(615.320156 270.566338)">samples in flight + out_fifo occupancy  &lt;=  OUT_FIFO_DEPTH</text>
+    <text style="font-size: 6.75px; font-family: 'Liberation Sans', 'DejaVu Sans'; fill: #333333" transform="translate(586.89791 278.167998)">so the output FIFO is never written while full - a counting argument, not a stall net.</text>
+    <text style="font-size: 6.75px; font-family: 'Liberation Sans', 'DejaVu Sans'; fill: #333333" transform="translate(580.815 285.769658)">Check at elaboration: OUT_FIFO_DEPTH &gt; 5 + clog2(MAC_UNITS), else II = 1 is lost</text>
+   </g>
+   <g id="text_21">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: middle; fill: #111111" x="126" y="418.282617" transform="rotate(-0 126 418.282617)">write COEFF[i]</text>
+   </g>
+   <g id="text_22">
+    <text style="font-size: 7.5px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: middle; fill: #333333" x="126" y="429.31834" transform="rotate(-0 126 429.31834)">AXI4-Lite, lands in the SHADOW bank</text>
+   </g>
+   <g id="text_23">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: middle; fill: #111111" x="342" y="418.548398" transform="rotate(-0 342 418.548398)">CTRL.COEFF_COMMIT</text>
+   </g>
+   <g id="text_24">
+    <text style="font-size: 7.5px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: middle; fill: #333333" x="342" y="428.953887" transform="rotate(-0 342 428.953887)">STATUS.COEFF_PENDING = 1</text>
+   </g>
+   <g id="text_25">
+    <text style="font-weight: 700; font-size: 8.25px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: middle; fill: #111111" x="568.8" y="414.324521" transform="rotate(-0 568.8 414.324521)">frame_boundary || idle ?</text>
+   </g>
+   <g id="text_26">
+    <text style="font-size: 6.75px; font-family: 'Liberation Sans', 'DejaVu Sans'; fill: #333333" transform="translate(523.802812 424.185088)">boundary = a TLAST beat has</text>
+    <text style="font-size: 6.75px; font-family: 'Liberation Sans', 'DejaVu Sans'; fill: #333333" transform="translate(531.780469 431.786748)">LEFT the IP (output pop)</text>
+   </g>
+   <g id="text_27">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: middle; fill: #111111" x="806.4" y="413.57543" transform="rotate(-0 806.4 413.57543)">swap  (bank_sel toggles)</text>
+   </g>
+   <g id="text_28">
+    <text style="font-size: 7.5px; font-family: 'Liberation Sans', 'DejaVu Sans'; fill: #333333" transform="translate(752.217773 424.63084)">PENDING clears; the next frame</text>
+    <text style="font-size: 7.5px; font-family: 'Liberation Sans', 'DejaVu Sans'; fill: #333333" transform="translate(764.572266 433.520098)">uses the new coefficients</text>
+   </g>
+   <g id="text_29">
+    <text style="font-weight: 700; font-size: 8.25px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: middle; fill: #111111" x="568.8" y="487.099189" transform="rotate(-0 568.8 487.099189)">wait</text>
+   </g>
+   <g id="text_30">
+    <text style="font-size: 6.75px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: middle; fill: #333333" x="568.8" y="496.083838" transform="rotate(-0 568.8 496.083838)">the frame in progress keeps the OLD coefficients</text>
+   </g>
+   <g id="patch_19">
+    <path d="M 324 87.12 
+L 316.08 83.52 
+L 316.08 90.72 
+z
+" clip-path="url(#p8d163f209a)" style="fill: #222222; stroke: #222222; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_20">
+    <path d="M 392.4 216 
+L 396 208.08 
+L 388.8 208.08 
+z
+" clip-path="url(#p8d163f209a)" style="fill: #222222; stroke: #222222; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_21">
+    <path d="M 172.8 112.32 
+L 180.72 115.92 
+L 180.72 108.72 
+z
+" clip-path="url(#p8d163f209a)" style="fill: #222222; stroke: #222222; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_22">
+    <path d="M 82.08 216 
+L 85.68 208.08 
+L 78.48 208.08 
+z
+" clip-path="url(#p8d163f209a)" style="fill: #222222; stroke: #222222; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_23">
+    <path d="M 140.4 122.4 
+L 136.8 130.32 
+L 144 130.32 
+z
+" clip-path="url(#p8d163f209a)" style="fill: #222222; stroke: #222222; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_24">
+    <path d="M 698.4 100.8 
+L 706.32 104.4 
+L 706.32 97.2 
+z
+" clip-path="url(#p8d163f209a)" style="fill: #c55a11; stroke: #c55a11; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_25">
+    <path d="M 608.4 129.6 
+L 604.8 137.52 
+L 612 137.52 
+z
+" clip-path="url(#p8d163f209a)" style="fill: #c55a11; stroke: #c55a11; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_26">
+    <path d="M 252 421.2 
+L 244.08 417.6 
+L 244.08 424.8 
+z
+" clip-path="url(#p8d163f209a)" style="fill: #222222; stroke: #222222; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_27">
+    <path d="M 460.8 421.2 
+L 452.88 417.6 
+L 452.88 424.8 
+z
+" clip-path="url(#p8d163f209a)" style="fill: #222222; stroke: #222222; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_28">
+    <path d="M 712.8 421.2 
+L 704.88 417.6 
+L 704.88 424.8 
+z
+" clip-path="url(#p8d163f209a)" style="fill: #222222; stroke: #222222; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_29">
+    <path d="M 568.8 471.6 
+L 572.4 463.68 
+L 565.2 463.68 
+z
+" clip-path="url(#p8d163f209a)" style="fill: #222222; stroke: #222222; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_31">
+    <text style="font-style: italic; font-size: 8.25px; font-family: 'Liberation Sans', 'DejaVu Sans'; fill: #222222" transform="translate(28.8 298.557312)">DRAIN exists so that stopping loses nothing: dropping ENABLE mid-stream still delivers every admitted sample</text>
+    <text style="font-style: italic; font-size: 8.25px; font-family: 'Liberation Sans', 'DejaVu Sans'; fill: #222222" transform="translate(28.8 308.205139)">(measured: beats out == SAMPLE_CNT).  FLUSH and SOFT_RESET discard by definition.</text>
+   </g>
+   <g id="text_32">
+    <text style="font-size: 8.5px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: start; fill: #222222" x="823.68" y="13.719707" transform="rotate(-0 823.68 13.719707)">flow</text>
+   </g>
+   <g id="text_33">
+    <text style="font-size: 8.5px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: start; fill: #222222" x="823.68" y="28.119707" transform="rotate(-0 823.68 28.119707)">control / status</text>
+   </g>
+   <g id="text_34">
+    <g id="patch_30">
+     <path d="M 226.956445 84.29436 
+L 269.843555 84.29436 
+L 269.843555 66.90564 
+L 226.956445 66.90564 
+z
+" style="fill: #ffffff; opacity: 0.9"/>
+    </g>
+    <text style="font-size: 7.5px; font-family: 'Liberation Sans', 'DejaVu Sans'; fill: #222222" transform="translate(227.556445 74.110437)">ENABLE &amp;&amp;</text>
+    <text style="font-size: 7.5px; font-family: 'Liberation Sans', 'DejaVu Sans'; fill: #222222" transform="translate(230.681836 81.586633)">!cfg_illegal</text>
+   </g>
+   <g id="text_35">
+    <g id="patch_31">
+     <path d="M 358.248047 173.84718 
+L 426.551953 173.84718 
+L 426.551953 164.55282 
+L 358.248047 164.55282 
+z
+" style="fill: #ffffff; opacity: 0.9"/>
+    </g>
+    <text style="font-size: 7.5px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: middle; fill: #222222" x="392.4" y="171.781641" transform="rotate(-0 392.4 171.781641)">!ENABLE or FLUSH</text>
+   </g>
+   <g id="text_36">
+    <g id="patch_32">
+     <path d="M 213.02168 185.09436 
+L 262.17832 185.09436 
+L 262.17832 167.70564 
+L 213.02168 167.70564 
+z
+" style="fill: #ffffff; opacity: 0.9"/>
+    </g>
+    <text style="font-size: 7.5px; font-family: 'Liberation Sans', 'DejaVu Sans'; fill: #222222" transform="translate(216.127148 174.292273)">not busy and</text>
+    <text style="font-size: 7.5px; font-family: 'Liberation Sans', 'DejaVu Sans'; fill: #222222" transform="translate(213.62168 182.386633)">dp_count == 0</text>
+   </g>
+   <g id="text_37">
+    <g id="patch_33">
+     <path d="M 39.756445 177.89436 
+L 82.643555 177.89436 
+L 82.643555 160.50564 
+L 39.756445 160.50564 
+z
+" style="fill: #ffffff; opacity: 0.9"/>
+    </g>
+    <text style="font-size: 7.5px; font-family: 'Liberation Sans', 'DejaVu Sans'; fill: #222222" transform="translate(40.356445 167.710437)">ENABLE &amp;&amp;</text>
+    <text style="font-size: 7.5px; font-family: 'Liberation Sans', 'DejaVu Sans'; fill: #222222" transform="translate(44.523633 175.186633)">cfg_illegal</text>
+   </g>
+   <g id="text_38">
+    <g id="patch_34">
+     <path d="M 143.39918 173.84718 
+L 176.28082 173.84718 
+L 176.28082 164.55282 
+L 143.39918 164.55282 
+z
+" style="fill: #ffffff; opacity: 0.9"/>
+    </g>
+    <text style="font-size: 7.5px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: middle; fill: #222222" x="159.84" y="171.779883" transform="rotate(-0 159.84 171.779883)">!ENABLE</text>
+   </g>
+   <g id="text_39">
+    <g id="patch_35">
+     <path d="M 688.364648 407.84718 
+L 701.235352 407.84718 
+L 701.235352 398.55282 
+L 688.364648 398.55282 
+z
+" style="fill: #ffffff; opacity: 0.9"/>
+    </g>
+    <text style="font-size: 7.5px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: middle; fill: #222222" x="694.8" y="404.439844" transform="rotate(-0 694.8 404.439844)">yes</text>
+   </g>
+   <g id="text_40">
+    <g id="patch_36">
+     <path d="M 574.829297 465.44718 
+L 584.370703 465.44718 
+L 584.370703 456.15282 
+L 574.829297 456.15282 
+z
+" style="fill: #ffffff; opacity: 0.9"/>
+    </g>
+    <text style="font-size: 7.5px; font-family: 'Liberation Sans', 'DejaVu Sans'; text-anchor: middle; fill: #222222" x="579.6" y="462.781055" transform="rotate(-0 579.6 462.781055)">no</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p8d163f209a">
+   <rect x="0" y="0" width="936" height="547.2"/>
+  </clipPath>
+ </defs>
+</svg>
