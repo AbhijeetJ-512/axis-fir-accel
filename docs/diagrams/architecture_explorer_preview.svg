@@ -1,0 +1,320 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 888" width="1500" height="888" role="img" aria-label="Block diagram of axis_fir_top: AXI4-Lite control plane, coefficient banks, input FIFO, control FSM with credit counter, delay line, folded MAC array, adder tree, round and saturate stage, output FIFO, and the bound checkers">
+<style>
+svg{--bg:#E9EDF1;--surface:#FFFFFF;--surface2:#F3F6F8;--ink:#121B24;--muted:#556574;--line:#C3CDD7;--grid:#D3DBE3;
+ --data:#1B5FC4;--fwd:#B86200;--ctl:#6E3FC4;--trap:#C42F38;--mem:#0F7F55;--ver:#6A7B8C;
+ --b0:#1B5FC4;--b1:#6E3FC4;--b2:#B86200;--b3:#0F7F55;--b4:#A0306F;--b5:#0E7C8C}
+@media (prefers-color-scheme: dark){svg{--bg:#0C1219;--surface:#131B24;--surface2:#18222D;--ink:#E1E8EF;--muted:#8D9BA9;--line:#2B3947;--grid:#1B2631;
+ --data:#5FA3FF;--fwd:#F0A63A;--ctl:#A986F5;--trap:#FF6B70;--mem:#3CCB8E;--ver:#8496A8;
+ --b0:#5FA3FF;--b1:#A986F5;--b2:#F0A63A;--b3:#3CCB8E;--b4:#F07AB8;--b5:#3CC6D6}}
+.bg{fill:var(--bg)} .dot{fill:var(--grid)} .band{fill:var(--surface2);opacity:.6}
+.hd{font:700 16px 'Arial Narrow','Roboto Condensed','Helvetica Neue',Arial,sans-serif;letter-spacing:.04em}
+.box{fill:var(--surface);stroke:var(--line);stroke-width:1.2} .ext .box{fill:var(--surface2);stroke-dasharray:4 3} .ver .box{stroke-dasharray:2 3}
+.nt{font:700 15px 'Arial Narrow','Roboto Condensed','Helvetica Neue',Arial,sans-serif;fill:var(--ink)}
+.ns{font:400 10.5px ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;fill:var(--muted)}
+.nl{font:400 10.5px -apple-system,'Segoe UI',Helvetica,Arial,sans-serif;fill:var(--muted)}
+.bar{fill:var(--surface2);stroke:var(--ink);stroke-opacity:.45;stroke-width:1.2}
+.bt{font:600 11px ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;fill:var(--muted);letter-spacing:.08em}
+.bnd{fill:none;stroke:var(--line);stroke-dasharray:6 5;stroke-width:1.2}
+.cap{font:600 11px ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;fill:var(--muted);letter-spacing:.06em}
+.lg{font:400 12px -apple-system,'Segoe UI',Helvetica,Arial,sans-serif;fill:var(--muted)}
+.ln{fill:none;stroke-width:1.6}
+.t-data{stroke:var(--data)} .t-fwd{stroke:var(--fwd);stroke-width:2} .t-ctl{stroke:var(--ctl);stroke-dasharray:5 4}
+.t-trap{stroke:var(--trap);stroke-dasharray:7 3} .t-mem{stroke:var(--mem);stroke-width:2} .t-ver{stroke:var(--ver);stroke-dasharray:2 4}
+.p-data{fill:var(--data)} .p-fwd{fill:var(--fwd)} .p-ctl{fill:var(--ctl)} .p-trap{fill:var(--trap)} .p-mem{fill:var(--mem)} .p-ver{fill:var(--ver)}
+.pulse{fill:var(--data);animation:clk 1.7s steps(1,end) infinite}
+@keyframes clk{0%{opacity:0}88%{opacity:.55}100%{opacity:0}}
+@media (prefers-reduced-motion: reduce){.pulse{animation:none;opacity:0}}
+</style>
+<defs><pattern id="g" width="16" height="16" patternUnits="userSpaceOnUse"><circle class="dot" cx="1" cy="1" r=".9"/></pattern>
+<marker id="a-data" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="p-data"/></marker>
+<marker id="a-mem" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="p-mem"/></marker>
+<marker id="a-ctl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="p-ctl"/></marker>
+<marker id="a-fwd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="p-fwd"/></marker>
+<marker id="a-trap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="p-trap"/></marker>
+<marker id="a-ver" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="p-ver"/></marker>
+</defs>
+<rect class="bg" width="1500" height="888"/><rect width="1500" height="830" fill="url(#g)"/>
+<rect class="band" x="10" y="12" width="235" height="732" rx="4"/>
+<rect x="10" y="12" width="235" height="4" rx="2" fill="var(--b0)"/>
+<text class="hd" x="20" y="40" fill="var(--b0)">Host side (testbench)</text>
+<rect class="band" x="255" y="12" width="320" height="732" rx="4"/>
+<rect x="255" y="12" width="320" height="4" rx="2" fill="var(--b1)"/>
+<text class="hd" x="265" y="40" fill="var(--b1)">Control plane</text>
+<rect class="band" x="605" y="12" width="250" height="732" rx="4"/>
+<rect x="605" y="12" width="250" height="4" rx="2" fill="var(--b2)"/>
+<text class="hd" x="615" y="40" fill="var(--b2)">Admission &amp; flow control</text>
+<rect class="band" x="865" y="12" width="370" height="732" rx="4"/>
+<rect x="865" y="12" width="370" height="4" rx="2" fill="var(--b3)"/>
+<text class="hd" x="875" y="40" fill="var(--b3)">fir_core datapath</text>
+<rect class="band" x="1245" y="12" width="245" height="732" rx="4"/>
+<rect x="1245" y="12" width="245" height="4" rx="2" fill="var(--b4)"/>
+<text class="hd" x="1255" y="40" fill="var(--b4)">Output</text>
+<rect class="bnd" x="262" y="72" width="1226" height="660" rx="6"/>
+<text class="cap" x="1482" y="726" text-anchor="end">axis_fir_top (rtl/top/axis_fir_top.sv)</text>
+<text class="cap" x="1488" y="826" text-anchor="end">testbench + verification (outside the design)</text>
+<path class="ln t-mem" d="M230 125 L270 125" marker-end="url(#a-mem)"><title>AW, W, AR</title></path>
+<path class="ln t-mem" d="M270 160 L230 160" marker-end="url(#a-mem)"><title>B, R</title></path>
+<path class="ln t-mem" d="M415 190 L415 215" marker-end="url(#a-mem)"><title>reg_wen · waddr · wdata · wstrb · reg_ren · raddr</title></path>
+<path class="ln t-mem" d="M515 215 L515 190" marker-end="url(#a-mem)"><title>reg_werr · reg_rdata · reg_rerr</title></path>
+<path class="ln t-data" d="M480 395 L480 435" marker-end="url(#a-data)"><title>coef_we · waddr · wdata</title></path>
+<path class="ln t-data" d="M330 435 L330 395" marker-end="url(#a-data)"><title>coef_rdata · COEFF_PENDING</title></path>
+<path class="ln t-ctl" d="M405 395 L405 435" marker-end="url(#a-ctl)"><title>cmd_coeff_commit</title></path>
+<path class="ln t-ctl" d="M560 255 L620 255" marker-end="url(#a-ctl)"><title>ctrl_enable · cfg_ntaps · cfg_symmetric · cfg_illegal</title></path>
+<path class="ln t-ctl" d="M560 245 L566 245 L566 70 L1085 70 L1085 235 L1080 235" marker-end="url(#a-ctl)"><title>cfg_ntaps · cfg_symmetric</title></path>
+<path class="ln t-ctl" d="M560 240 L569 240 L569 66 L1087 66 L1087 655 L1080 655" marker-end="url(#a-ctl)"><title>cfg_round_mode · cfg_sat_mode</title></path>
+<path class="ln t-trap" d="M560 235 L572 235 L572 62 L1367 62 L1367 90" marker-end="url(#a-trap)"><title>irq</title></path>
+<path class="ln t-trap" d="M560 270 L620 270" marker-end="url(#a-trap)"><title>soft_clear = cmd_soft_reset | cmd_flush</title></path>
+<path class="ln t-ctl" d="M620 320 L560 320" marker-end="url(#a-ctl)"><title>sts_busy · sts_draining · evt_sample</title></path>
+<path class="ln t-ctl" d="M620 500 L596 500 L596 348 L560 348" marker-end="url(#a-ctl)"><title>in_fifo_empty</title></path>
+<path class="ln t-ctl" d="M1350 700 L1350 724 L592 724 L592 312 L560 312" marker-end="url(#a-ctl)"><title>out_fifo_full · evt_frame_done</title></path>
+<path class="ln t-trap" d="M940 700 L940 732 L598 732 L598 300 L560 300" marker-end="url(#a-trap)"><title>evt_saturate</title></path>
+<path class="ln t-data" d="M230 545 L620 545" marker-end="url(#a-data)"><title>s_axis_tdata · tlast · tvalid</title></path>
+<path class="ln t-ctl" d="M620 560 L230 560" marker-end="url(#a-ctl)"><title>s_axis_tready = !full</title></path>
+<path class="ln t-ctl" d="M620 490 L612 490 L612 335 L620 335" marker-end="url(#a-ctl)"><title>in_tvalid · in_tlast</title></path>
+<path class="ln t-ctl" d="M620 345 L604 345 L604 515 L620 515" marker-end="url(#a-ctl)"><title>in_tready = sample_start</title></path>
+<path class="ln t-data" d="M840 520 L844 520 L844 130 L880 130" marker-end="url(#a-data)"><title>in_tdata</title></path>
+<path class="ln t-ctl" d="M840 225 L854 225 L854 150 L880 150" marker-end="url(#a-ctl)"><title>shift_en</title></path>
+<path class="ln t-ctl" d="M840 300 L880 300" marker-end="url(#a-ctl)"><title>tap_base = pass × MAC_UNITS</title></path>
+<path class="ln t-ctl" d="M840 245 L869 245 L869 78 L1155 78 L1155 350" marker-end="url(#a-ctl)"><title>pass_vld · first · last · tlast</title></path>
+<path class="ln t-data" d="M980 170 L980 200" marker-end="url(#a-data)"><title>taps_flat</title></path>
+<path class="ln t-data" d="M560 472 L859 472 L859 270 L880 270" marker-end="url(#a-data)"><title>coef_flat (active bank)</title></path>
+<path class="ln t-data" d="M980 320 L980 350" marker-end="url(#a-data)"><title>opnd_q · coef_q</title></path>
+<path class="ln t-data" d="M980 420 L980 450" marker-end="url(#a-data)"><title>prod_flat</title></path>
+<path class="ln t-data" d="M980 520 L980 550" marker-end="url(#a-data)"><title>tree_acc</title></path>
+<path class="ln t-ctl" d="M1155 520 L1155 580 L1080 580" marker-end="url(#a-ctl)"><title>acc_vld · first · last · tlast</title></path>
+<path class="ln t-data" d="M980 610 L980 640" marker-end="url(#a-data)"><title>result_acc</title></path>
+<path class="ln t-data" d="M1080 675 L1260 675" marker-end="url(#a-data)"><title>out_data · out_last · out_valid</title></path>
+<path class="ln t-ctl" d="M880 690 L864 690 L864 340 L840 340" marker-end="url(#a-ctl)"><title>core_out_valid</title></path>
+<path class="ln t-data" d="M1330 590 L1330 520" marker-end="url(#a-data)"><title>m_axis_tdata · tlast · tvalid</title></path>
+<path class="ln t-ctl" d="M1410 520 L1410 590" marker-end="url(#a-ctl)"><title>m_axis_tready</title></path>
+<path class="ln t-fwd" d="M1320 700 L1320 716 L849 716 L849 440 L840 440" marker-end="url(#a-fwd)"><title>out_pop → restore · credit_reload</title></path>
+<path class="ln t-fwd" d="M780 385 L780 355" marker-end="url(#a-fwd)"><title>have_credit</title></path>
+<path class="ln t-fwd" d="M700 355 L700 385" marker-end="url(#a-fwd)"><title>consume</title></path>
+<path class="ln t-ctl" d="M1290 700 L1290 708 L520 708 L520 520" marker-end="url(#a-ctl)"><title>frame_boundary (TLAST pop)</title></path>
+<path class="ln t-ctl" d="M620 352 L586 352 L586 450 L560 450" marker-end="url(#a-ctl)"><title>idle = !sts_busy</title></path>
+<path class="ln t-ver" d="M460 760 L460 520" marker-end="url(#a-ver)"><title>bank and pending checks</title></path>
+<path class="ln t-ver" d="M730 760 L730 570" marker-end="url(#a-ver)"><title>FIFO and stream rules</title></path>
+<path class="ln t-ver" d="M1000 760 L1000 700" marker-end="url(#a-ver)"><title>output-stage and saturation rules</title></path>
+<path class="ln t-ver" d="M1400 760 L1400 700" marker-end="url(#a-ver)"><title>a_credit_inv · a_no_drop</title></path>
+<circle r="3.2" class="p-mem"><animateMotion dur="1.20s" begin="-0.00s" repeatCount="indefinite" path="M230 125 L270 125"/></circle>
+<circle r="3.2" class="p-mem"><animateMotion dur="1.20s" begin="-0.00s" repeatCount="indefinite" path="M270 160 L230 160"/></circle>
+<circle r="3.2" class="p-mem"><animateMotion dur="1.20s" begin="-0.00s" repeatCount="indefinite" path="M415 190 L415 215"/></circle>
+<circle r="3.2" class="p-mem"><animateMotion dur="1.20s" begin="-0.00s" repeatCount="indefinite" path="M515 215 L515 190"/></circle>
+<circle r="3.2" class="p-data"><animateMotion dur="1.20s" begin="-0.00s" repeatCount="indefinite" path="M480 395 L480 435"/></circle>
+<circle r="3.2" class="p-data"><animateMotion dur="1.20s" begin="-0.00s" repeatCount="indefinite" path="M330 435 L330 395"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="1.20s" begin="-0.00s" repeatCount="indefinite" path="M405 395 L405 435"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="1.20s" begin="-0.00s" repeatCount="indefinite" path="M560 255 L620 255"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="12.43s" begin="-0.00s" repeatCount="indefinite" path="M560 245 L566 245 L566 70 L1085 70 L1085 235 L1080 235"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="12.43s" begin="-2.49s" repeatCount="indefinite" path="M560 245 L566 245 L566 70 L1085 70 L1085 235 L1080 235"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="12.43s" begin="-4.97s" repeatCount="indefinite" path="M560 245 L566 245 L566 70 L1085 70 L1085 235 L1080 235"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="12.43s" begin="-7.46s" repeatCount="indefinite" path="M560 245 L566 245 L566 70 L1085 70 L1085 235 L1080 235"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="12.43s" begin="-9.94s" repeatCount="indefinite" path="M560 245 L566 245 L566 70 L1085 70 L1085 235 L1080 235"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="18.53s" begin="-0.00s" repeatCount="indefinite" path="M560 240 L569 240 L569 66 L1087 66 L1087 655 L1080 655"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="18.53s" begin="-2.32s" repeatCount="indefinite" path="M560 240 L569 240 L569 66 L1087 66 L1087 655 L1080 655"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="18.53s" begin="-4.63s" repeatCount="indefinite" path="M560 240 L569 240 L569 66 L1087 66 L1087 655 L1080 655"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="18.53s" begin="-6.95s" repeatCount="indefinite" path="M560 240 L569 240 L569 66 L1087 66 L1087 655 L1080 655"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="18.53s" begin="-9.26s" repeatCount="indefinite" path="M560 240 L569 240 L569 66 L1087 66 L1087 655 L1080 655"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="18.53s" begin="-11.58s" repeatCount="indefinite" path="M560 240 L569 240 L569 66 L1087 66 L1087 655 L1080 655"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="18.53s" begin="-13.90s" repeatCount="indefinite" path="M560 240 L569 240 L569 66 L1087 66 L1087 655 L1080 655"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="18.53s" begin="-16.21s" repeatCount="indefinite" path="M560 240 L569 240 L569 66 L1087 66 L1087 655 L1080 655"/></circle>
+<circle r="3.2" class="p-trap"><animateMotion dur="14.40s" begin="-0.00s" repeatCount="indefinite" path="M560 235 L572 235 L572 62 L1367 62 L1367 90"/></circle>
+<circle r="3.2" class="p-trap"><animateMotion dur="14.40s" begin="-2.40s" repeatCount="indefinite" path="M560 235 L572 235 L572 62 L1367 62 L1367 90"/></circle>
+<circle r="3.2" class="p-trap"><animateMotion dur="14.40s" begin="-4.80s" repeatCount="indefinite" path="M560 235 L572 235 L572 62 L1367 62 L1367 90"/></circle>
+<circle r="3.2" class="p-trap"><animateMotion dur="14.40s" begin="-7.20s" repeatCount="indefinite" path="M560 235 L572 235 L572 62 L1367 62 L1367 90"/></circle>
+<circle r="3.2" class="p-trap"><animateMotion dur="14.40s" begin="-9.60s" repeatCount="indefinite" path="M560 235 L572 235 L572 62 L1367 62 L1367 90"/></circle>
+<circle r="3.2" class="p-trap"><animateMotion dur="14.40s" begin="-12.00s" repeatCount="indefinite" path="M560 235 L572 235 L572 62 L1367 62 L1367 90"/></circle>
+<circle r="3.2" class="p-trap"><animateMotion dur="1.20s" begin="-0.00s" repeatCount="indefinite" path="M560 270 L620 270"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="1.20s" begin="-0.00s" repeatCount="indefinite" path="M620 320 L560 320"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="3.03s" begin="-0.00s" repeatCount="indefinite" path="M620 500 L596 500 L596 348 L560 348"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="17.51s" begin="-0.00s" repeatCount="indefinite" path="M1350 700 L1350 724 L592 724 L592 312 L560 312"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="17.51s" begin="-2.50s" repeatCount="indefinite" path="M1350 700 L1350 724 L592 724 L592 312 L560 312"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="17.51s" begin="-5.00s" repeatCount="indefinite" path="M1350 700 L1350 724 L592 724 L592 312 L560 312"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="17.51s" begin="-7.51s" repeatCount="indefinite" path="M1350 700 L1350 724 L592 724 L592 312 L560 312"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="17.51s" begin="-10.01s" repeatCount="indefinite" path="M1350 700 L1350 724 L592 724 L592 312 L560 312"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="17.51s" begin="-12.51s" repeatCount="indefinite" path="M1350 700 L1350 724 L592 724 L592 312 L560 312"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="17.51s" begin="-15.01s" repeatCount="indefinite" path="M1350 700 L1350 724 L592 724 L592 312 L560 312"/></circle>
+<circle r="3.2" class="p-trap"><animateMotion dur="12.06s" begin="-0.00s" repeatCount="indefinite" path="M940 700 L940 732 L598 732 L598 300 L560 300"/></circle>
+<circle r="3.2" class="p-trap"><animateMotion dur="12.06s" begin="-2.41s" repeatCount="indefinite" path="M940 700 L940 732 L598 732 L598 300 L560 300"/></circle>
+<circle r="3.2" class="p-trap"><animateMotion dur="12.06s" begin="-4.82s" repeatCount="indefinite" path="M940 700 L940 732 L598 732 L598 300 L560 300"/></circle>
+<circle r="3.2" class="p-trap"><animateMotion dur="12.06s" begin="-7.23s" repeatCount="indefinite" path="M940 700 L940 732 L598 732 L598 300 L560 300"/></circle>
+<circle r="3.2" class="p-trap"><animateMotion dur="12.06s" begin="-9.65s" repeatCount="indefinite" path="M940 700 L940 732 L598 732 L598 300 L560 300"/></circle>
+<circle r="3.2" class="p-data"><animateMotion dur="5.57s" begin="-0.00s" repeatCount="indefinite" path="M230 545 L620 545"/></circle>
+<circle r="3.2" class="p-data"><animateMotion dur="5.57s" begin="-2.79s" repeatCount="indefinite" path="M230 545 L620 545"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="5.57s" begin="-0.00s" repeatCount="indefinite" path="M620 560 L230 560"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="5.57s" begin="-2.79s" repeatCount="indefinite" path="M620 560 L230 560"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="2.44s" begin="-0.00s" repeatCount="indefinite" path="M620 490 L612 490 L612 335 L620 335"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="2.89s" begin="-0.00s" repeatCount="indefinite" path="M620 345 L604 345 L604 515 L620 515"/></circle>
+<circle r="3.2" class="p-data"><animateMotion dur="6.14s" begin="-0.00s" repeatCount="indefinite" path="M840 520 L844 520 L844 130 L880 130"/></circle>
+<circle r="3.2" class="p-data"><animateMotion dur="6.14s" begin="-2.05s" repeatCount="indefinite" path="M840 520 L844 520 L844 130 L880 130"/></circle>
+<circle r="3.2" class="p-data"><animateMotion dur="6.14s" begin="-4.10s" repeatCount="indefinite" path="M840 520 L844 520 L844 130 L880 130"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="1.64s" begin="-0.00s" repeatCount="indefinite" path="M840 225 L854 225 L854 150 L880 150"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="1.20s" begin="-0.00s" repeatCount="indefinite" path="M840 300 L880 300"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="10.77s" begin="-0.00s" repeatCount="indefinite" path="M840 245 L869 245 L869 78 L1155 78 L1155 350"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="10.77s" begin="-2.69s" repeatCount="indefinite" path="M840 245 L869 245 L869 78 L1155 78 L1155 350"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="10.77s" begin="-5.39s" repeatCount="indefinite" path="M840 245 L869 245 L869 78 L1155 78 L1155 350"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="10.77s" begin="-8.08s" repeatCount="indefinite" path="M840 245 L869 245 L869 78 L1155 78 L1155 350"/></circle>
+<circle r="3.2" class="p-data"><animateMotion dur="1.20s" begin="-0.00s" repeatCount="indefinite" path="M980 170 L980 200"/></circle>
+<circle r="3.2" class="p-data"><animateMotion dur="7.46s" begin="-0.00s" repeatCount="indefinite" path="M560 472 L859 472 L859 270 L880 270"/></circle>
+<circle r="3.2" class="p-data"><animateMotion dur="7.46s" begin="-2.49s" repeatCount="indefinite" path="M560 472 L859 472 L859 270 L880 270"/></circle>
+<circle r="3.2" class="p-data"><animateMotion dur="7.46s" begin="-4.97s" repeatCount="indefinite" path="M560 472 L859 472 L859 270 L880 270"/></circle>
+<circle r="3.2" class="p-data"><animateMotion dur="1.20s" begin="-0.00s" repeatCount="indefinite" path="M980 320 L980 350"/></circle>
+<circle r="3.2" class="p-data"><animateMotion dur="1.20s" begin="-0.00s" repeatCount="indefinite" path="M980 420 L980 450"/></circle>
+<circle r="3.2" class="p-data"><animateMotion dur="1.20s" begin="-0.00s" repeatCount="indefinite" path="M980 520 L980 550"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="1.93s" begin="-0.00s" repeatCount="indefinite" path="M1155 520 L1155 580 L1080 580"/></circle>
+<circle r="3.2" class="p-data"><animateMotion dur="1.20s" begin="-0.00s" repeatCount="indefinite" path="M980 610 L980 640"/></circle>
+<circle r="3.2" class="p-data"><animateMotion dur="2.57s" begin="-0.00s" repeatCount="indefinite" path="M1080 675 L1260 675"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="5.57s" begin="-0.00s" repeatCount="indefinite" path="M880 690 L864 690 L864 340 L840 340"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="5.57s" begin="-2.79s" repeatCount="indefinite" path="M880 690 L864 690 L864 340 L840 340"/></circle>
+<circle r="3.2" class="p-data"><animateMotion dur="1.20s" begin="-0.00s" repeatCount="indefinite" path="M1330 590 L1330 520"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="1.20s" begin="-0.00s" repeatCount="indefinite" path="M1410 520 L1410 590"/></circle>
+<circle r="3.2" class="p-fwd"><animateMotion dur="11.03s" begin="-0.00s" repeatCount="indefinite" path="M1320 700 L1320 716 L849 716 L849 440 L840 440"/></circle>
+<circle r="3.2" class="p-fwd"><animateMotion dur="11.03s" begin="-2.21s" repeatCount="indefinite" path="M1320 700 L1320 716 L849 716 L849 440 L840 440"/></circle>
+<circle r="3.2" class="p-fwd"><animateMotion dur="11.03s" begin="-4.41s" repeatCount="indefinite" path="M1320 700 L1320 716 L849 716 L849 440 L840 440"/></circle>
+<circle r="3.2" class="p-fwd"><animateMotion dur="11.03s" begin="-6.62s" repeatCount="indefinite" path="M1320 700 L1320 716 L849 716 L849 440 L840 440"/></circle>
+<circle r="3.2" class="p-fwd"><animateMotion dur="11.03s" begin="-8.82s" repeatCount="indefinite" path="M1320 700 L1320 716 L849 716 L849 440 L840 440"/></circle>
+<circle r="3.2" class="p-fwd"><animateMotion dur="1.20s" begin="-0.00s" repeatCount="indefinite" path="M780 385 L780 355"/></circle>
+<circle r="3.2" class="p-fwd"><animateMotion dur="1.20s" begin="-0.00s" repeatCount="indefinite" path="M700 355 L700 385"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="13.80s" begin="-0.00s" repeatCount="indefinite" path="M1290 700 L1290 708 L520 708 L520 520"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="13.80s" begin="-2.30s" repeatCount="indefinite" path="M1290 700 L1290 708 L520 708 L520 520"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="13.80s" begin="-4.60s" repeatCount="indefinite" path="M1290 700 L1290 708 L520 708 L520 520"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="13.80s" begin="-6.90s" repeatCount="indefinite" path="M1290 700 L1290 708 L520 708 L520 520"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="13.80s" begin="-9.20s" repeatCount="indefinite" path="M1290 700 L1290 708 L520 708 L520 520"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="13.80s" begin="-11.50s" repeatCount="indefinite" path="M1290 700 L1290 708 L520 708 L520 520"/></circle>
+<circle r="3.2" class="p-ctl"><animateMotion dur="2.26s" begin="-0.00s" repeatCount="indefinite" path="M620 352 L586 352 L586 450 L560 450"/></circle>
+<circle r="3.2" class="p-ver"><animateMotion dur="3.43s" begin="-0.00s" repeatCount="indefinite" path="M460 760 L460 520"/></circle>
+<circle r="3.2" class="p-ver"><animateMotion dur="2.71s" begin="-0.00s" repeatCount="indefinite" path="M730 760 L730 570"/></circle>
+<circle r="3.2" class="p-ver"><animateMotion dur="1.20s" begin="-0.00s" repeatCount="indefinite" path="M1000 760 L1000 700"/></circle>
+<circle r="3.2" class="p-ver"><animateMotion dur="1.20s" begin="-0.00s" repeatCount="indefinite" path="M1400 760 L1400 700"/></circle>
+<g class="n ext"><rect class="box" x="25" y="90" width="205" height="100" rx="5"/>
+<text class="nt" x="35" y="109">AXI4-Lite master</text>
+<text class="ns" x="35" y="124">testbench driver</text>
+<text class="nl" x="35" y="138">write: AW and W together</text>
+<text class="nl" x="35" y="152">read: AR, then wait for R</text>
+</g>
+<g class="n ext"><rect class="box" x="25" y="500" width="205" height="90" rx="5"/>
+<text class="nt" x="35" y="519">AXI4-Stream source</text>
+<text class="ns" x="35" y="534">tb: TDATA TLAST TVALID</text>
+<text class="nl" x="35" y="548">holds VALID until TREADY</text>
+</g>
+<g class="n"><rect class="box" x="270" y="90" width="290" height="100" rx="5"/>
+<text class="nt" x="280" y="109">axil_slave</text>
+<text class="ns" x="280" y="124">AXI4-Lite to a simple register port</text>
+<text class="nl" x="280" y="138">AW and W held; reg_wen when both present</text>
+<text class="nl" x="280" y="152">B, R registered; one write, one read slot</text>
+</g>
+<g class="n"><rect class="box" x="270" y="215" width="290" height="180" rx="5"/>
+<text class="nt" x="280" y="234">csr_regfile</text>
+<text class="ns" x="280" y="249">CTRL · CFG · STATUS · IRQ · counters</text>
+<text class="nl" x="280" y="263">decode: CSR 0x000-0x0FF, COEF 0x400-0x7FF</text>
+<text class="nl" x="280" y="277">byte strobes · W1P commands · W1C IRQ_STATUS</text>
+<text class="nl" x="280" y="291">SLVERR: unmapped, CFG while busy, bad coef index</text>
+<text class="nl" x="280" y="305">illegal CFG: NTAPS 0 or &gt; NTAPS_MAX, round 3</text>
+</g>
+<g class="n"><rect class="box" x="270" y="435" width="290" height="85" rx="5"/>
+<text class="nt" x="280" y="454">coeff_bank</text>
+<text class="ns" x="280" y="469">two banks: shadow | active</text>
+<text class="nl" x="280" y="483">software writes shadow; commit swaps it</text>
+<text class="nl" x="280" y="497">swap at a frame boundary or when idle</text>
+</g>
+<g class="n"><rect class="box" x="270" y="575" width="185" height="60" rx="5"/>
+<text class="nt" x="280" y="594">reset_sync</text>
+<text class="ns" x="280" y="609">aresetn → rst_n</text>
+<text class="nl" x="280" y="623">async assert, sync de-assert</text>
+</g>
+<g class="n"><rect class="box" x="620" y="215" width="220" height="140" rx="5"/>
+<text class="nt" x="630" y="234">fir_ctrl</text>
+<text class="ns" x="630" y="249">run FSM · scheduler · admit</text>
+<text class="nl" x="630" y="263">IDLE · RUN · DRAIN · CFGERR</text>
+<text class="nl" x="630" y="277">P = ceil(N_eff / MAC) passes</text>
+<text class="nl" x="630" y="291">sample_start = RUN &amp; data &amp; credit</text>
+<text class="nl" x="630" y="305">&amp; no pass phase still running</text>
+</g>
+<g class="n"><rect class="box" x="620" y="385" width="220" height="80" rx="5"/>
+<text class="nt" x="630" y="404">credit_ctr</text>
+<text class="ns" x="630" y="419">conserves output FIFO slots</text>
+<text class="nl" x="630" y="433">take on admit, give back on pop</text>
+<text class="nl" x="630" y="447">reloaded on flush</text>
+</g>
+<g class="n"><rect class="box" x="620" y="480" width="220" height="90" rx="5"/>
+<text class="nt" x="630" y="499">in_fifo</text>
+<text class="ns" x="630" y="514">axis_fifo · depth 4</text>
+<text class="nl" x="630" y="528">s_tready = !full (occupancy only)</text>
+<text class="nl" x="630" y="542">wrap-bit read and write pointers</text>
+</g>
+<g class="n"><rect class="box" x="880" y="90" width="200" height="80" rx="5"/>
+<text class="nt" x="890" y="109">delay_line</text>
+<text class="ns" x="890" y="124">NTAPS_MAX × 16 shift reg</text>
+<text class="nl" x="890" y="138">shifts once per sample</text>
+<text class="nl" x="890" y="152">all taps readable in one cycle</text>
+</g>
+<g class="n"><rect class="box" x="880" y="200" width="200" height="120" rx="5"/>
+<text class="nt" x="890" y="219">operand select</text>
+<text class="ns" x="890" y="234">tap_base + g · pre-adder</text>
+<text class="nl" x="890" y="248">near x[n-k] + far x[n-(N-1-k)]</text>
+<text class="nl" x="890" y="262">centre tap counted once</text>
+<text class="nl" x="890" y="276">coefficient gated by active</text>
+</g>
+<g class="n"><rect class="box" x="880" y="350" width="200" height="70" rx="5"/>
+<text class="nt" x="890" y="369">mac_array</text>
+<text class="ns" x="890" y="384">MAC_UNITS multipliers</text>
+<text class="nl" x="890" y="398">17 × 16 → 33-bit, registered</text>
+</g>
+<g class="n"><rect class="box" x="880" y="450" width="200" height="70" rx="5"/>
+<text class="nt" x="890" y="469">acc_reduce</text>
+<text class="ns" x="890" y="484">adder tree, 1 reg per level</text>
+<text class="nl" x="890" y="498">ACC_W = 36: cannot overflow</text>
+</g>
+<g class="n"><rect class="box" x="880" y="550" width="200" height="60" rx="5"/>
+<text class="nt" x="890" y="569">fold accumulator</text>
+<text class="ns" x="890" y="584">adds the P partial sums</text>
+<text class="nl" x="890" y="598">restarts on the first pass</text>
+</g>
+<g class="n"><rect class="box" x="880" y="640" width="200" height="60" rx="5"/>
+<text class="nt" x="890" y="659">round_sat</text>
+<text class="ns" x="890" y="674">round, clamp, output reg</text>
+<text class="nl" x="890" y="688">trunc · half-up · convergent</text>
+</g>
+<g class="n"><rect class="box" x="1090" y="350" width="140" height="170" rx="5"/>
+<text class="nt" x="1100" y="369">control chain</text>
+<text class="ns" x="1100" y="384">record per pass</text>
+<text class="nl" x="1100" y="398">delay = 2 + log2(MAC)</text>
+<text class="nl" x="1100" y="412">so each pass record</text>
+<text class="nl" x="1100" y="426">meets its own sum</text>
+<text class="nl" x="1100" y="440">(runtime latency)</text>
+</g>
+<g class="n ext"><rect class="box" x="1260" y="90" width="215" height="60" rx="5"/>
+<text class="nt" x="1270" y="109">IRQ line</text>
+<text class="ns" x="1270" y="124">irq = |(STATUS &amp; ENABLE)</text>
+<text class="nl" x="1270" y="138">FRAME_DONE · SAT_EVENT · CFG_ERR</text>
+</g>
+<g class="n ext"><rect class="box" x="1260" y="430" width="215" height="90" rx="5"/>
+<text class="nt" x="1270" y="449">AXI4-Stream sink</text>
+<text class="ns" x="1270" y="464">tb: m_axis_tready pattern</text>
+<text class="nl" x="1270" y="478">TREADY held low to stall the IP</text>
+</g>
+<g class="n"><rect class="box" x="1260" y="590" width="215" height="110" rx="5"/>
+<text class="nt" x="1270" y="609">out_fifo</text>
+<text class="ns" x="1270" y="624">axis_fifo · depth 8</text>
+<text class="nl" x="1270" y="638">push without a ready check:</text>
+<text class="nl" x="1270" y="652">credits make overflow impossible</text>
+<text class="nl" x="1270" y="666">output stable while TREADY low</text>
+</g>
+<g class="n ext ver"><rect class="box" x="270" y="760" width="1205" height="56" rx="5"/>
+<text class="nt" x="280" y="779">fir_checkers (bind)</text>
+<text class="ns" x="280" y="794">verif/fir_checkers.sv · verif/fir_binds.sv · bound to the slave, both FIFOs, credit counter, FSM, banks, register file, delay line, output stage and top</text>
+<text class="nl" x="280" y="808">105 assertions · 81 cover points · 4 scoreboards · runs inside the cocotb suites under Verilator 5.052</text>
+</g>
+<path class="ln t-data" d="M16 850 L42 850" marker-end="url(#a-data)"/>
+<text class="lg" x="50" y="854">Samples, coefficients, sums</text>
+<path class="ln t-mem" d="M238 850 L264 850" marker-end="url(#a-mem)"/>
+<text class="lg" x="272" y="854">AXI4-Lite register access</text>
+<path class="ln t-ctl" d="M447 850 L473 850" marker-end="url(#a-ctl)"/>
+<text class="lg" x="481" y="854">Control, config &amp; handshake</text>
+<path class="ln t-fwd" d="M669 850 L695 850" marker-end="url(#a-fwd)"/>
+<text class="lg" x="703" y="854">Credit / flow control</text>
+<path class="ln t-trap" d="M851 850 L877 850" marker-end="url(#a-trap)"/>
+<text class="lg" x="885" y="854">Flush, interrupt, saturation</text>
+<path class="ln t-ver" d="M1079 850 L1105 850" marker-end="url(#a-ver)"/>
+<text class="lg" x="1113" y="854">Verification only</text>
+<text class="lg" x="1488" y="874" text-anchor="end">Open the interactive explorer to run scenarios through the design</text>
+</svg>
