@@ -28,3 +28,8 @@ formal/*/
 
 # Verilator builds of the checker runs and the mutation campaign
 build/
+
+# Explorer validation output
+docs/explorer/validate/rtlbuild/
+docs/explorer/validate/run/
+docs/explorer/validate/mut.js

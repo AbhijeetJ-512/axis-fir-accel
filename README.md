@@ -33,6 +33,25 @@ RESULT: accumulator width derivation holds
 
 ---
 
+## Interactive architecture explorer
+
+[![Animated block diagram of axis_fir_top: click to open the interactive explorer](docs/diagrams/architecture_explorer_preview.svg)](https://abhijeetj-512.github.io/axis-fir-accel/architecture_explorer.html)
+
+**[Open the interactive explorer](https://abhijeetj-512.github.io/axis-fir-accel/architecture_explorer.html)** (GitHub Pages). The animation above
+is a preview. The page runs ten scenarios through a cycle-accurate JavaScript model of `axis_fir_top`: programming the filter over
+AXI4-Lite, coefficient banks and a commit that waits for a frame boundary, the symmetric pre-adder, resource folding (`MAC_UNITS` 1, 2 or 4),
+the credit counter holding back admission when the sink stalls, saturation and interrupts, a bad `CFG` and `SLVERR`, a graceful stop and a
+flush with samples in flight. It also walks through 11 paths step by step and has an inspector for each block with file and line references.
+
+I checked the model against the RTL rather than trusting it. `docs/explorer/validate/` replays the model's stimulus through the real
+`axis_fir_top` in Icarus Verilog and compares 23 signals on every cycle: 48 runs, 3,554 cycles, no difference. Putting 45 one-line bugs into
+the model, the replay catches 44; the survivor is an equivalent change. Not covered: `reset_sync` (the model starts after reset), X
+propagation, `MAC_UNITS` above 4, and the bound checkers (described on the page, not simulated). The model is a small instance (16 taps,
+FIFO depths 4 and 8) so a whole run fits on screen; the top level's defaults are 64 taps and depths 8 and 16. The page also works opened
+straight from a clone. `docs/explorer/` holds its sources, and `docs/diagrams/make_explorer_preview.py` regenerates the preview.
+
+---
+
 ## What's different from a textbook FIR
 
 Three things, and they're the reason the project exists.

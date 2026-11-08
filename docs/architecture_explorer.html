@@ -1,0 +1,975 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AXI4-Stream FIR Accelerator Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: drafting-table schematic. Diagram canvas left, inspector rail right, timing / state sheets below. */
+:root{
+  color-scheme:light;
+  --bg:#E9EDF1; --surface:#FFFFFF; --surface-2:#F3F6F8; --ink:#121B24; --muted:#556574; --line:#C3CDD7; --grid:#D3DBE3;
+  --accent:#1B5FC4; --accent-ink:#FFFFFF;
+  --data:#1B5FC4; --fwd:#B86200; --ctl:#6E3FC4; --trap:#C42F38; --mem:#0F7F55; --ver:#6A7B8C;
+  --b0:#1B5FC4; --b1:#6E3FC4; --b2:#B86200; --b3:#0F7F55; --b4:#A0306F; --b5:#0E7C8C;
+  --t0:#1B5FC4; --t1:#B86200; --t2:#0F7F55; --t3:#A0306F; --t4:#6E3FC4; --t5:#0E7C8C; --t6:#8A6A00; --t7:#C42F38;
+  --hatch:rgba(110,63,196,.16);
+  --f-display:"Saira Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0C1219; --surface:#131B24; --surface-2:#18222D; --ink:#E1E8EF; --muted:#8D9BA9; --line:#2B3947; --grid:#1B2631;
+  --accent:#5FA3FF; --accent-ink:#06121F;
+  --data:#5FA3FF; --fwd:#F0A63A; --ctl:#A986F5; --trap:#FF6B70; --mem:#3CCB8E; --ver:#8496A8;
+  --b0:#5FA3FF; --b1:#A986F5; --b2:#F0A63A; --b3:#3CCB8E; --b4:#F07AB8; --b5:#3CC6D6;
+  --t0:#5FA3FF; --t1:#F0A63A; --t2:#3CCB8E; --t3:#F07AB8; --t4:#A986F5; --t5:#3CC6D6; --t6:#E3C04A; --t7:#FF6B70;
+  --hatch:rgba(169,134,245,.22); color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0C1219; --surface:#131B24; --surface-2:#18222D; --ink:#E1E8EF; --muted:#8D9BA9; --line:#2B3947; --grid:#1B2631;
+  --accent:#5FA3FF; --accent-ink:#06121F;
+  --data:#5FA3FF; --fwd:#F0A63A; --ctl:#A986F5; --trap:#FF6B70; --mem:#3CCB8E; --ver:#8496A8;
+  --b0:#5FA3FF; --b1:#A986F5; --b2:#F0A63A; --b3:#3CCB8E; --b4:#F07AB8; --b5:#3CC6D6;
+  --t0:#5FA3FF; --t1:#F0A63A; --t2:#3CCB8E; --t3:#F07AB8; --t4:#A986F5; --t5:#3CC6D6; --t6:#E3C04A; --t7:#FF6B70;
+  --hatch:rgba(169,134,245,.22); color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:1640px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;letter-spacing:.01em;text-wrap:balance;margin:0}
+h1{font-size:clamp(28px,3.2vw,40px);line-height:1.05} h2{font-size:20px} h3{font-size:16px}
+p{margin:0}
+code,.mono{font-family:var(--f-mono);font-size:12px}
+a{color:var(--accent)}
+.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lede{color:var(--muted);max-width:78ch}
+header.top{display:flex;flex-wrap:wrap;gap:12px 32px;align-items:flex-end;justify-content:space-between}
+header.top .ttl{display:flex;flex-direction:column;gap:6px;min-width:0}
+.specs{display:flex;flex-wrap:wrap;gap:6px}
+.spec{font-family:var(--f-mono);font-size:11px;padding:3px 8px;border:1px solid var(--line);border-radius:3px;background:var(--surface);color:var(--muted)}
+.spec b{color:var(--ink);font-weight:600}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;padding:8px 10px;background:var(--surface);border:1px solid var(--line);border-radius:6px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.tabs{display:flex;gap:2px;background:var(--surface-2);padding:3px;border-radius:5px;border:1px solid var(--line)}
+.tabs button{font:600 13px var(--f-body);border:0;background:transparent;color:var(--muted);padding:6px 12px;border-radius:3px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.transport{display:flex;gap:6px;align-items:center}
+.btn{font:500 13px var(--f-body);display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 10px;border-radius:4px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn svg{width:14px;height:14px;fill:currentColor}
+button:focus-visible,select:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.speed{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.speed input{width:120px;accent-color:var(--accent)}
+.speed output{font-family:var(--f-mono);color:var(--ink);min-width:3.5em}
+.cyc{margin-left:auto;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.cyc b{color:var(--ink);font-size:15px;margin-left:6px}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:16px;align-items:start}
+@media (max-width:1100px){.main{grid-template-columns:minmax(0,1fr)}}
+.canvas{background:var(--surface);border:1px solid var(--line);border-radius:6px;min-width:0;display:flex;flex-direction:column}
+.scroll{overflow-x:auto;overflow-y:hidden}
+#diagram{display:block;width:100%;min-width:1080px;height:auto;user-select:none}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;padding:10px 14px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);align-items:center}
+.legend .lg{display:inline-flex;align-items:center;gap:6px;cursor:pointer;border:0;background:none;color:inherit;font:inherit;padding:2px 4px;border-radius:3px}
+.legend .lg[aria-pressed="false"]{opacity:.35;text-decoration:line-through}
+.legend svg{width:30px;height:10px}
+.legend .note{margin-left:auto;font-size:11px}
+.band{fill:var(--surface-2)}
+.bandlbl{font:700 15px var(--f-display);letter-spacing:.04em}
+.occ{font:500 11px var(--f-mono);fill:var(--muted)}
+.occ.live{fill:var(--ink)}
+.boundary{fill:none;stroke:var(--line);stroke-dasharray:6 5;stroke-width:1.2}
+.boundlbl{font:600 11px var(--f-mono);fill:var(--muted);letter-spacing:.06em}
+.node rect.box{fill:var(--surface);stroke:var(--line);stroke-width:1.2;transition:stroke .2s,fill .2s}
+.node{cursor:pointer}
+.node:hover rect.box{stroke:var(--accent)}
+.node .nt{font:700 14.5px var(--f-display);fill:var(--ink);letter-spacing:.02em}
+.node .ns{font:400 10.5px var(--f-mono);fill:var(--muted)}
+.node .nl{font:400 10.5px var(--f-body);fill:var(--muted)}
+.node .nv{font:600 11px var(--f-mono);fill:var(--accent)}
+.node.ext rect.box{fill:var(--surface-2);stroke-dasharray:4 3}
+.node.ver rect.box{stroke-dasharray:2 3}
+.node.sel rect.box{stroke:var(--accent);stroke-width:2.4}
+.node.live rect.box{stroke:var(--accent);stroke-width:1.8}
+.node.trapped rect.box{stroke:var(--trap);stroke-width:2.4}
+.node.stalled rect.box{stroke:var(--ctl);stroke-width:2.4}
+.bar rect.reg{fill:var(--surface-2);stroke:var(--ink);stroke-opacity:.45;stroke-width:1.2;cursor:pointer;transition:fill .25s}
+.bar.pulse rect.reg{fill:var(--accent)}
+.bar text{font:600 11px var(--f-mono);fill:var(--muted);letter-spacing:.08em;pointer-events:none}
+.bar.pulse text{fill:var(--accent-ink)}
+.bar.flushed rect.reg{stroke:var(--trap);stroke-opacity:1;stroke-width:2}
+.bar.held rect.reg{stroke:var(--ctl);stroke-opacity:1;stroke-width:2}
+.edge path.ln{fill:none;stroke-width:1.6;transition:opacity .25s,stroke-width .2s}
+.edge path.hit{fill:none;stroke:transparent;stroke-width:12;cursor:pointer}
+.edge.t-data path.ln{stroke:var(--data)}
+.edge.t-fwd path.ln{stroke:var(--fwd);stroke-width:2}
+.edge.t-ctl path.ln{stroke:var(--ctl);stroke-dasharray:5 4}
+.edge.t-trap path.ln{stroke:var(--trap);stroke-dasharray:7 3}
+.edge.t-mem path.ln{stroke:var(--mem);stroke-width:2}
+.edge.t-ver path.ln{stroke:var(--ver);stroke-dasharray:2 4}
+.edge.on path.ln{stroke-width:2.8}
+.edge.hidden{display:none}
+.elbl{font:500 10.5px var(--f-mono);pointer-events:none}
+.elbl rect{fill:var(--surface);stroke:var(--line)}
+.elbl text{fill:var(--ink)}
+svg.focus .edge:not(.on) path.ln{opacity:.12}
+svg.focus .node:not(.on):not(.sel){opacity:.38}
+svg.focus .bar:not(.on){opacity:.5}
+.p-data{fill:var(--data)} .p-fwd{fill:var(--fwd)} .p-ctl{fill:var(--ctl)} .p-trap{fill:var(--trap)} .p-mem{fill:var(--mem)} .p-ver{fill:var(--ver)}
+.mk-data{fill:var(--data)} .mk-fwd{fill:var(--fwd)} .mk-ctl{fill:var(--ctl)} .mk-trap{fill:var(--trap)} .mk-mem{fill:var(--mem)} .mk-ver{fill:var(--ver)}
+.dotgrid{fill:var(--grid)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:6px;display:flex;flex-direction:column;min-width:0;max-height:calc(100vh - 110px);position:sticky;top:calc(env(safe-area-inset-top,0px) + 66px)}
+@media (max-width:1100px){.panel{position:static;max-height:none}}
+.panel .pscroll{overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:14px}
+.insp{border:1px solid var(--accent);border-radius:5px;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--surface-2)}
+.insp .ih{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.insp .x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:2px 4px}
+.kv{display:grid;grid-template-columns:88px minmax(0,1fr);gap:4px 10px;font-size:12.5px}
+.kv dt{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding-top:2px}
+.kv dd{margin:0;min-width:0}
+.kv ul{margin:0;padding-left:16px}
+pre.code{margin:0;font:400 11px/1.45 var(--f-mono);background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:8px 10px;overflow-x:auto;white-space:pre;color:var(--ink)}
+.file{font-family:var(--f-mono);font-size:11px;color:var(--accent)}
+.sec{display:flex;flex-direction:column;gap:8px}
+.muted{color:var(--muted)} .small{font-size:12px}
+.pathlist{display:flex;flex-direction:column;gap:10px}
+.pgroup{display:flex;flex-direction:column;gap:4px}
+.pgroup .gl{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.pbtn{text-align:left;font:500 13px var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 9px;border-radius:4px;cursor:pointer}
+.pbtn[aria-pressed="true"]{border-color:var(--accent);background:var(--surface-2);box-shadow:inset 3px 0 0 var(--accent)}
+ol.steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:5px;font-size:12.5px}
+ol.steps li{cursor:pointer;color:var(--muted);padding:2px 4px;border-radius:3px}
+ol.steps li.done{color:var(--ink)}
+ol.steps li.cur{color:var(--ink);background:var(--surface-2);outline:1px solid var(--accent)}
+.caption{font-size:13px;padding:10px 12px;border-left:3px solid var(--accent);background:var(--surface-2);border-radius:0 4px 4px 0;min-height:3.2em}
+select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:var(--ink);max-width:100%}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg button{font:600 12px var(--f-mono);border:0;background:var(--surface);color:var(--muted);padding:5px 10px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{font:500 11px var(--f-mono);padding:2px 7px;border-radius:10px;border:1px solid var(--line);color:var(--muted);background:var(--surface)}
+.chip.on.c-ctl{background:var(--ctl);border-color:var(--ctl);color:var(--surface)}
+.chip.on.c-fwd{background:var(--fwd);border-color:var(--fwd);color:var(--surface)}
+.chip.on.c-trap{background:var(--trap);border-color:var(--trap);color:var(--surface)}
+.chip.on.c-mem{background:var(--mem);border-color:var(--mem);color:var(--surface)}
+.chip.on.c-data{background:var(--data);border-color:var(--data);color:var(--surface)}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.stat{border:1px solid var(--line);border-radius:4px;padding:6px 8px;background:var(--surface-2)}
+.stat .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.stat .v{font:600 16px var(--f-mono);font-variant-numeric:tabular-nums}
+.listing{font:400 11.5px/1.6 var(--f-mono);border:1px solid var(--line);border-radius:4px;overflow:auto;max-height:280px}
+.listing .ln{display:grid;grid-template-columns:34px minmax(0,1fr);gap:6px;padding:0 8px;white-space:pre;cursor:pointer}
+.listing .ln:hover{background:var(--surface-2)}
+.listing .ln.sel{background:var(--surface-2);box-shadow:inset 3px 0 0 var(--accent)}
+.listing .stg{font-weight:600;font-size:10px;border-radius:2px;text-align:center;color:var(--surface);align-self:center;line-height:1.5}
+.listing .cm{color:var(--muted)}
+.journey{display:flex;flex-direction:column;gap:4px;font-size:12px}
+.journey .j{display:grid;grid-template-columns:40px 30px minmax(0,1fr);gap:6px;align-items:baseline}
+.journey .j .c{font-family:var(--f-mono);color:var(--muted);font-size:11px}
+.journey .j .s{font:600 10.5px var(--f-mono);text-align:center;border-radius:2px;color:var(--surface)}
+.sheets{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px}
+@media (max-width:1100px){.sheets{grid-template-columns:minmax(0,1fr)}}
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.sheet .sh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.chartwrap{overflow:auto;max-height:420px;border:1px solid var(--line);border-radius:4px}
+table.pc{border-collapse:separate;border-spacing:0;font:500 11px var(--f-mono);font-variant-numeric:tabular-nums}
+table.pc th,table.pc td{padding:0;height:22px;min-width:26px;text-align:center;border-right:1px solid var(--grid);border-bottom:1px solid var(--grid)}
+table.pc thead th{position:sticky;top:0;background:var(--surface-2);color:var(--muted);z-index:2;font-weight:500}
+table.pc th.ins{position:sticky;left:0;background:var(--surface);text-align:left;padding:0 10px 0 8px;min-width:210px;max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;z-index:1;cursor:pointer;font-weight:500;color:var(--ink)}
+table.pc thead th.ins{z-index:3;background:var(--surface-2);color:var(--muted);cursor:default}
+table.pc tr.sel th.ins{box-shadow:inset 3px 0 0 var(--accent);background:var(--surface-2)}
+table.pc td.cur{background:var(--surface-2)}
+table.pc td .cell{display:block;margin:2px;border-radius:2px;line-height:18px;color:var(--surface);font-weight:600;font-size:10px;white-space:nowrap;overflow:hidden}
+table.pc td .cell.st{background:repeating-linear-gradient(135deg,var(--hatch) 0 4px,transparent 4px 8px)!important;color:var(--ctl);outline:1px solid var(--ctl)}
+table.pc td .cell.sq{background:transparent!important;color:var(--trap);outline:1px dashed var(--trap)}
+table.pc tr.squashed th.ins{color:var(--muted);text-decoration:line-through}
+.state{display:flex;flex-direction:column;gap:8px}
+.regs{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:4px;font:400 11.5px var(--f-mono)}
+.reg{display:flex;justify-content:space-between;gap:6px;padding:3px 7px;border:1px solid var(--line);border-radius:3px;background:var(--surface-2);min-width:0}
+.reg .r{color:var(--muted)} .reg .v{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.reg.chg{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.reg.hot{border-color:var(--fwd)}
+.log{font:400 11.5px/1.55 var(--f-mono);border:1px solid var(--line);border-radius:4px;padding:6px 8px;max-height:260px;overflow:auto;display:flex;flex-direction:column;gap:2px}
+.log .e{display:grid;grid-template-columns:34px minmax(0,1fr);gap:8px}
+.log .e .c{color:var(--muted)}
+.log .e.k-trap{color:var(--trap)} .log .e.k-ctl{color:var(--ctl)} .log .e.k-fwd{color:var(--fwd)} .log .e.k-ret{color:var(--ink)} .log .e.k-mem{color:var(--mem)} .log .e.k-data{color:var(--data)} .log .e.k-info{color:var(--muted)}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.notes .sheet p,.notes .sheet li{font-size:13px;color:var(--muted)}
+.notes ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.figs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.fig{border:1px solid var(--line);border-radius:4px;padding:6px 8px;background:var(--surface-2);min-width:0}
+.fig .k{font-size:11px;color:var(--muted)} .fig .v{font:600 15px var(--f-mono);font-variant-numeric:tabular-nums} .fig .s{font:400 10.5px var(--f-mono);color:var(--muted)}
+#tip{position:fixed;pointer-events:none;z-index:20;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:6px 9px;font-size:12px;max-width:320px;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+#tip b{font-family:var(--f-mono);font-size:11.5px}
+[data-mode-only]{display:none}
+body[data-mode="sim"] [data-mode-only~="sim"],body[data-mode="path"] [data-mode-only~="path"],body[data-mode="explore"] [data-mode-only~="explore"]{display:flex}
+footer.foot{font-size:12px;color:var(--muted)}
+@media (prefers-reduced-motion: reduce){ .node rect.box,.bar rect.reg,.edge path.ln{transition:none} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="ttl">
+      <span class="eyebrow" id="m-eyebrow"></span>
+      <h1 id="m-title"></h1>
+      <p class="lede" id="m-lede"></p>
+    </div>
+    <div class="specs" id="m-specs" aria-label="Parameters"></div>
+  </header>
+  <div class="toolbar" role="toolbar" aria-label="View and animation controls">
+    <div class="tabs" role="tablist" aria-label="Mode">
+      <button role="tab" data-mode="sim" aria-selected="true" id="tab-sim">Run a scenario</button>
+      <button role="tab" data-mode="path" aria-selected="false">Trace a path</button>
+      <button role="tab" data-mode="explore" aria-selected="false">Explore</button>
+    </div>
+    <div class="transport">
+      <button class="btn primary" id="btn-play" aria-label="Pause"><svg viewBox="0 0 16 16" id="ico-play"><rect x="3" y="2" width="3.5" height="12"/><rect x="9.5" y="2" width="3.5" height="12"/></svg><span id="lbl-play">Pause</span></button>
+      <button class="btn" id="btn-step" title="Step (→)"><svg viewBox="0 0 16 16"><path d="M2 2l8 6-8 6z"/><rect x="11" y="2" width="3" height="12"/></svg>Step</button>
+      <button class="btn" id="btn-restart" title="Restart"><svg viewBox="0 0 16 16"><path d="M8 2a6 6 0 1 1-5.7 4.1l1.9.6A4 4 0 1 0 8 4v2.5L4.5 3 8 0z"/></svg>Restart</button>
+    </div>
+    <label class="speed" for="speed">Speed <input type="range" id="speed" min="-2" max="2" step="0.25" value="0"><output id="speed-out">1.00×</output></label>
+    <div class="cyc" data-mode-only="sim">cycle <b id="cyc-n">0</b></div>
+  </div>
+  <div class="main">
+    <section class="canvas" aria-label="Block diagram">
+      <div class="scroll"><svg id="diagram" role="img"></svg></div>
+      <div class="legend" id="legend"></div>
+    </section>
+    <aside class="panel" aria-label="Details">
+      <div class="pscroll" id="panel">
+        <div id="insp-slot"></div>
+        <div class="sec" data-mode-only="sim" style="flex-direction:column">
+          <h3 id="sim-h">Scenario</h3>
+          <div class="row"><select id="scenario" aria-label="Scenario"></select></div>
+          <div id="opts" class="sec"></div>
+          <p class="small muted" id="scen-desc"></p>
+          <div class="stats" id="stats"></div>
+          <div class="chips" id="sigchips" aria-label="Signals this cycle"></div>
+          <div class="listing" id="listing" aria-label="Transactions"></div>
+          <div class="sec"><h3>Journey</h3><p class="small muted" id="journey-hint">Click a line in the list above or a row in the chart to follow one item through the design.</p><div class="journey" id="journey"></div></div>
+        </div>
+        <div class="sec" data-mode-only="path" style="flex-direction:column">
+          <h3>Pick a path</h3>
+          <div class="pathlist" id="pathlist"></div>
+          <div class="caption" id="caption" aria-live="polite"></div>
+          <ol class="steps" id="steps"></ol>
+        </div>
+        <div class="sec" data-mode-only="explore" style="flex-direction:column">
+          <h3>Blocks</h3>
+          <p class="small muted">All wires flow continuously. Click a block or a wire for its detail; click a legend entry to hide that kind of connection.</p>
+          <div class="pathlist" id="modlist"></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+  <div class="sheets" data-mode-only="sim">
+    <section class="sheet">
+      <div class="sh"><h2 id="chart-h">Timeline</h2><span class="small muted" id="chart-hint"></span></div>
+      <div class="chartwrap" id="chartwrap"><table class="pc" id="chart"></table></div>
+    </section>
+    <section class="sheet">
+      <div class="sh"><h2>State</h2><span class="small muted">after the last clock edge</span></div>
+      <div class="state" id="state"></div>
+      <div class="sh"><h3>Event log</h3><span class="small muted">newest first</span></div>
+      <div class="log" id="log"></div>
+    </section>
+  </div>
+  <div class="notes" id="notes"></div>
+  <footer class="foot" id="foot"></footer>
+</div>
+<div id="tip" hidden></div>
+
+<script>
+// ===================================================================================== project configuration
+const DATA={"META":{"pageTitle":"AXI4-Stream FIR Accelerator Explorer","title":"AXI4-Stream FIR Accelerator Explorer","eyebrow":"axis_fir_accel · rtl/ · derived from axis_fir_top and every module under it","lede":"Every block, wire and rule below comes from the RTL. Program the filter over AXI4-Lite, stream samples through a cycle-accurate model of the whole IP, watch the credit counter hold back admission, or click any block to see what it does and where it lives in the source.","specs":[["modelled instance","16 taps","max"],["MAC_UNITS","1 | 2 | 4",""],["DATA_W / COEF_W","16 / 16",""],["FIFO depth in / out","4 / 8",""],["ACC_W","36 bits",""],["SYMMETRIC_EN","1",""]],"runLabel":"Run a scenario","scenarioLabel":"Scenario","diagramLabel":"Block diagram of axis_fir_top: AXI4-Lite control plane, coefficient banks, input FIFO, control FSM with credit counter, delay line, folded MAC array, adder tree, round and saturate stage, output FIFO, and the bound checkers","barLegend":"Registers sit inside the blocks","notes":[{"h":"How to read the wires","items":["Everything is one synchronous clock domain. Each block's registers update on the rising edge; wires between blocks are combinational unless the block name says it registers them. Particles move one wire per animation step, not per clock.","Green wires are AXI4-Lite register accesses, blue wires carry samples, coefficients and sums, dashed purple wires are control and handshake signals, orange wires are the credit scheme, red wires are errors: flush, interrupt, saturation.","<b>There is no stall net.<\/b> The arithmetic pipeline never holds a result. A sample is admitted only when the credit counter guarantees its result a slot in the output FIFO, so back-pressure travels through FIFO occupancy and credits, never through combinational logic.","<b>The delay line shifts once per sample, not once per pass.<\/b> With MAC_UNITS below N_eff the same history is read for P passes; the fold accumulator adds the P partial sums.","The only place numbers can go wrong is <code>round_sat<\/code>: the accumulator width is derived (DATA_W + COEF_W + log2 NTAPS_MAX) so nothing upstream can overflow.","This page models a small instance so a whole run fits on screen: NTAPS_MAX = 16, input FIFO 4, output FIFO 8. The top level's defaults are 64 taps, 8 MACs, FIFOs 8 and 16."]},{"h":"What was checked","items":["The simulation on this page is a JavaScript model of <code>axis_fir_top<\/code> written register by register from the RTL: AXI4-Lite slave, CSRs, coefficient banks, both FIFOs, credit counter, control FSM, delay line, pre-adder, MAC array, adder tree, fold accumulator and round/saturate stage.","<b>Replayed against the real RTL<\/b> (Icarus Verilog 12): 10 scenarios × MAC_UNITS 1, 2, 4, with all three rounding modes for the scenarios that depend on it. 48 runs, 3,554 cycles, 23 signals compared on every cycle (AXI4-Lite handshakes and responses, stream handshakes and data, irq, credit count, FSM state, FIFO occupancies, bank select, pending flag, interrupt status, counters). No difference.","<b>Mutation check of the model:<\/b> 45 deliberate one-line bugs put into the model; the replay caught 44. The survivor, a write to a read-only register taking effect, is not a difference: the register case statement has no read-only entries.","<b>Not covered:<\/b> <code>reset_sync<\/code> (the model starts after reset), X propagation from unwritten memory, other parameter values (the model fixes 16 taps, 16-bit data and coefficients, FIFO depths 4 and 8; MAC_UNITS above 4 is not modelled), and the checkers themselves, which are described here but not simulated. Timing and area figures come from <code>results/ppa/<\/code>, not from this model.","Reproduce: <code>docs/explorer/validate/<\/code> in the repository holds the replay testbench, the headless runner (needs <code>gjs<\/code>), the comparison script and the mutation campaign."]}],"figuresTitle":"Measured results from the repository","figures":[{"k":"Fold sweep, bit-identical","v":"MAC_UNITS 1…32","s":"all six fold factors match a fold-agnostic model"},{"k":"Sustained throughput","v":"II = 1.000","s":"continuous streaming · test_continuous_stream_ii1"},{"k":"Checkers","v":"105 + 81","s":"assertions + cover points · results/sva/summary.txt"},{"k":"Injected bugs caught","v":"93 / 95","s":"15 only by an assertion · 2 proved equivalent"},{"k":"MAC_UNITS = 8","v":"48.1 Msamples/s","s":"192.4 MHz, II = 4, 344 493 µm² · Sky130 HD"},{"k":"MAC_UNITS = 1","v":"5.8 Msamples/s","s":"185.5 MHz, II = 32, 200 006 µm² · Sky130 HD"}],"foot":"Source: <a href='https://github.com/AbhijeetJ-512/axis-fir-accel'>github.com/AbhijeetJ-512/axis-fir-accel<\/a>. Throughput, area and timing are pre-layout Yosys + OpenSTA numbers from <code>results/ppa/ppa_sweep.md<\/code> (build NTAPS_MAX = 64)."},"VIEW":{"w":1500,"h":830,"bandH":732,"barY":0,"barH":0,"boundary":{"x":262,"y":72,"w":1226,"h":660,"label":"axis_fir_top (rtl/top/axis_fir_top.sv)"},"outsideLabel":"testbench + verification (outside the design)"},"BANDS":[{"k":"H","n":"Host side (testbench)","x":10,"w":235,"c":"--b0"},{"k":"C","n":"Control plane","x":255,"w":320,"c":"--b1"},{"k":"F","n":"Admission & flow control","x":605,"w":250,"c":"--b2"},{"k":"D","n":"fir_core datapath","x":865,"w":370,"c":"--b3"},{"k":"O","n":"Output","x":1245,"w":245,"c":"--b4"}],"TYPES":{"data":"Samples, coefficients, sums","mem":"AXI4-Lite register access","ctl":"Control, config & handshake","fwd":"Credit / flow control","trap":"Flush, interrupt, saturation","ver":"Verification only"},"NODES":{"axil_m":{"x":25,"y":90,"w":205,"h":100,"t":"AXI4-Lite master","s":"testbench driver","l":["write: AW and W together","read: AR, then wait for R"],"stage":"H","file":"tb/cocotb/env/axil_driver.py","role":"The software side of the control plane. Programs coefficients, CFG and CTRL, and reads STATUS, counters and interrupt status.","resp":["Writes use the 32-bit data bus with byte strobes","Responses OKAY (00) or SLVERR (10) come back on B and R"],"code":"","in":["B, R responses"],"out":["AW, W, AR (valid, address, data, strobe)"],"deps":["axil_slave"],"ext":1},"src":{"x":25,"y":500,"w":205,"h":90,"t":"AXI4-Stream source","s":"tb: TDATA TLAST TVALID","l":["holds VALID until TREADY"],"stage":"H","file":"tb/cocotb/env/axis_driver.py","role":"Offers 16-bit samples; TLAST marks the end of a frame.","resp":["Standard AXI4-Stream source: data is stable while TVALID is high and TREADY is low"],"code":"","in":["s_axis_tready"],"out":["s_axis_tdata, s_axis_tlast, s_axis_tvalid"],"deps":["in_fifo"],"ext":1},"axil":{"x":270,"y":90,"w":290,"h":100,"t":"axil_slave","s":"AXI4-Lite to a simple register port","l":["AW and W held; reg_wen when both present","B, R registered; one write, one read slot"],"stage":"C","file":"rtl/axi_lite/axil_slave.sv:96-112,151-190","role":"Turns AXI4-Lite channels into single-cycle register reads and writes.","resp":["awready = !bvalid && !aw_full, wready = !bvalid && !w_full: no new write while a response is pending","reg_wen fires when an address and data are both available (held or arriving this cycle)","reg_werr is captured into BRESP: SLVERR when set","A read is accepted when no R response is pending; rdata and rresp are captured from the register file in the same cycle"],"code":"assign s_axil_awready = wr_slot_free && !aw_full_q;\nassign s_axil_wready  = wr_slot_free && !w_full_q;\nassign reg_wen = aw_have && w_have && wr_slot_free;","in":["AW, W, AR, bready, rready","reg_werr, reg_rdata, reg_rerr"],"out":["reg_wen, reg_waddr, reg_wdata, reg_wstrb","reg_ren, reg_raddr","B, R"],"deps":["AXI4-Lite master","csr_regfile"]},"csr":{"x":270,"y":215,"w":290,"h":180,"t":"csr_regfile","s":"CTRL · CFG · STATUS · IRQ · counters","l":["decode: CSR 0x000-0x0FF, COEF 0x400-0x7FF","byte strobes · W1P commands · W1C IRQ_STATUS","SLVERR: unmapped, CFG while busy, bad coef index","illegal CFG: NTAPS 0 or > NTAPS_MAX, round 3"],"stage":"C","file":"rtl/control/csr_regfile.sv","role":"All software-visible state: configuration, commands, status, interrupts and the coefficient window.","resp":["CTRL: ENABLE level, and write-1 pulses SOFT_RESET, COEFF_COMMIT, FLUSH, CNT_CLR (each lasts one cycle)","CFG: NTAPS (9 bits), ROUND (2 bits), SAT mode, SYM; refused with SLVERR while the FSM is not IDLE","STATUS: idle, busy, coeff pending, cfg error, saturation sticky, input empty, output full, draining","IRQ_STATUS is write-1-to-clear and set wins over clear on the same cycle; irq = |(IRQ_STATUS & IRQ_ENABLE)","SAMPLE_CNT counts admissions; FRAME_CNT counts TLAST beats leaving the IP","A write to a read-only CSR is accepted and ignored; unmapped addresses and coefficient indices at or above NTAPS_MAX return SLVERR"],"code":"assign cfg_wr_blocked = w_csr_mapped && (waddr12 == fir_pkg::REG_CFG) && sts_busy;\nassign reg_werr       = !w_mapped || cfg_wr_blocked;\nassign irq            = |(irq_status_q & irq_enable_q);","in":["reg_wen / waddr / wdata / wstrb, reg_ren / raddr","coef_rdata, sts_*, evt_sample, evt_frame_done, evt_saturate"],"out":["ctrl_enable, cfg_ntaps, cfg_round_mode, cfg_sat_mode, cfg_symmetric, cfg_illegal","cmd_soft_reset, cmd_coeff_commit, cmd_flush","coef_we / waddr / wdata, irq"],"deps":["axil_slave","coeff_bank","fir_ctrl"]},"coef":{"x":270,"y":435,"w":290,"h":85,"t":"coeff_bank","s":"two banks: shadow | active","l":["software writes shadow; commit swaps it","swap at a frame boundary or when idle"],"stage":"C","file":"rtl/mem/coeff_bank.sv","role":"Double-buffered coefficient storage so coefficients can change without disturbing a frame in progress.","resp":["Writes always go to the shadow bank; reads through the CSR window also read the shadow bank","COEFF_COMMIT sets pending; swap_now = pending && (frame_boundary || idle)","frame_boundary is the output pop of a TLAST beat, not the input, so a swap cannot land inside a frame still being computed","A commit arriving on the swap cycle survives (pending stays set)","coef_flat exposes the active bank to the datapath"],"code":"assign swap_now = pending_q && (frame_boundary || idle);\nif (swap_now) begin\n  bank_sel  <= ~bank_sel;\n  pending_q <= commit_req;      // a commit arriving on the swap cycle survives\nend else if (commit_req) pending_q <= 1'b1;","in":["coef_we / waddr / wdata","commit_req, frame_boundary, idle"],"out":["coef_flat (active bank)","pending, coef_rdata"],"deps":["csr_regfile","out_fifo","fir_ctrl"]},"rst":{"x":270,"y":575,"w":185,"h":60,"t":"reset_sync","s":"aresetn → rst_n","l":["async assert, sync de-assert"],"stage":"C","file":"rtl/common/reset_sync.sv","role":"Two-stage reset synchroniser. Not drawn into the wire view: rst_n goes to every register. The model on this page starts after reset.","resp":["Asserts rst_n low immediately when aresetn falls","Releases rst_n two clocks after aresetn rises"],"code":"","in":["aresetn"],"out":["rst_n to every block"],"deps":[]},"ctrl":{"x":620,"y":215,"w":220,"h":140,"t":"fir_ctrl","s":"run FSM · scheduler · admit","l":["IDLE · RUN · DRAIN · CFGERR","P = ceil(N_eff / MAC) passes","sample_start = RUN & data & credit","& no pass phase still running"],"stage":"F","file":"rtl/control/fir_ctrl.sv","role":"Three jobs in one module: the run/stop FSM, the pass scheduler for the folded datapath, and admission control.","resp":["N_eff = ceil(N/2) when symmetric, else N; P = ceil(N_eff / MAC_UNITS)","IDLE → RUN on ENABLE (or → CFGERR if cfg_illegal); RUN → DRAIN when ENABLE drops; DRAIN → IDLE when no pass is running and dp_count = 0","sample_start pops the input FIFO, takes a credit and shifts the delay line once; the next sample may start on the last pass of this one, so II = P","dp_count counts samples inside the datapath, so DRAIN loses nothing","soft_clear resets the FSM to IDLE and clears dp_count"],"code":"assign can_accept   = !busy || last_pass;\nassign sample_start = (state == ST_RUN) && in_tvalid && have_credit && can_accept;\nassign in_tready = sample_start;\nassign consume   = sample_start;\nassign shift_en  = sample_start;","in":["ctrl_enable, cfg_illegal, cfg_ntaps, cfg_symmetric, cmd_flush","in_tvalid, in_tlast, have_credit, core_out_valid, soft_clear"],"out":["in_tready (= sample_start), consume, shift_en","pass_vld / first / last / tlast, tap_base","sts_busy, sts_draining"],"deps":["csr_regfile","in_fifo","credit_ctr","delay_line"]},"credit":{"x":620,"y":385,"w":220,"h":80,"t":"credit_ctr","s":"conserves output FIFO slots","l":["take on admit, give back on pop","reloaded on flush"],"stage":"F","file":"rtl/control/credit_ctr.sv","role":"The whole of the IP's flow control: one counter.","resp":["Starts at OUT_FIFO_DEPTH; consume on admission, restore when a beat leaves the IP","Same-cycle consume and restore cancel, so full throughput holds the count steady","Overflow of the output FIFO is structurally impossible: every admitted sample has a reserved slot","On flush the counter is reloaded with OUT_FIFO_DEPTH minus what the output FIFO still holds"],"code":"assign have_credit = (credits_q != '0);\n...\n2'b10: credits_q <= credits_q - 1'b1;   // consume\n2'b01: credits_q <= credits_q + 1'b1;   // restore","in":["consume (admit)","restore (out_pop)","clear_value (credit_reload) on soft_clear"],"out":["have_credit"],"deps":["fir_ctrl","out_fifo"]},"infifo":{"x":620,"y":480,"w":220,"h":90,"t":"in_fifo","s":"axis_fifo · depth 4","l":["s_tready = !full (occupancy only)","wrap-bit read and write pointers"],"stage":"F","file":"rtl/axi_stream/axis_fifo.sv","role":"Elastic input buffer. TREADY depends on occupancy only, so there is no combinational path from the output side back to the input.","resp":["s_tready = !full; m_tvalid = !empty","Payload is {TLAST, TDATA}; the head is stable until it is popped","soft_clear drops the contents"],"code":"assign s_tready = !full;\nassign m_tvalid = !empty;\nassign {m_tlast, m_tdata} = mem[rd_ptr[IDX_W-1:0]];","in":["s_axis_tdata / tlast / tvalid","in_tready (pop), soft_clear"],"out":["s_axis_tready","in_tdata, in_tlast, in_tvalid, empty"],"deps":["AXI4-Stream source","fir_ctrl"]},"dl":{"x":880,"y":90,"w":200,"h":80,"t":"delay_line","s":"NTAPS_MAX × 16 shift reg","l":["shifts once per sample","all taps readable in one cycle"],"stage":"D","file":"rtl/dsp/delay_line.sv","role":"Sample history x[n], x[n-1], …","resp":["Advances on shift_en, which is once per admitted sample, never once per pass","Reset and flush zero it, so the first N−1 outputs see a zero-padded history"],"code":"end else if (shift_en) begin\n  mem[0] <= din;\n  for (int i = 1; i < NTAPS_MAX; i++) mem[i] <= mem[i-1];\nend","in":["in_tdata, shift_en, clear"],"out":["taps_flat"],"deps":["in_fifo","fir_ctrl"]},"prep":{"x":880,"y":200,"w":200,"h":120,"t":"operand select","s":"tap_base + g · pre-adder","l":["near x[n-k] + far x[n-(N-1-k)]","centre tap counted once","coefficient gated by active"],"stage":"D","file":"rtl/dsp/fir_core.sv:118-170","role":"Chooses, for each MAC unit, the operand and coefficient for this pass.","resp":["MAC g handles tap k = tap_base + g; it is active when k < NTAPS (or k < ceil(N/2) when symmetric)","Symmetric: operand = x[n-k] + x[n-(N-1-k)], one extra bit of headroom; the centre tap of an odd N is not doubled","The coefficient is gated by active as well as the operand: unwritten coefficient storage is never reset, and 0 × X is X in simulation","Operand and coefficient registers capture the selection at the end of the cycle"],"code":"assign active = cfg_symmetric ? (k_full < h_taps) : (k_full < cfg_ntaps);\nassign opnd_c = !active        ? 0\n             : !cfg_symmetric ? near_x\n             : is_mid         ? near_x       // centre tap counted ONCE\n             :                  (near_x + far_x);","in":["taps_flat, coef_flat, tap_base","cfg_ntaps, cfg_symmetric"],"out":["opnd_q, coef_q (registered)"],"deps":["delay_line","coeff_bank","fir_ctrl","csr_regfile"]},"mac":{"x":880,"y":350,"w":200,"h":70,"t":"mac_array","s":"MAC_UNITS multipliers","l":["17 × 16 → 33-bit, registered"],"stage":"D","file":"rtl/dsp/mac_array.sv","role":"Plain signed multiplies left to synthesis, one pipeline register each.","resp":["Operand width is DATA_W + 1 so the pre-adder sum is exact","No accumulation here; reduction is acc_reduce's job"],"code":"always_ff @(posedge clk or negedge rst_n)\n  if (!rst_n) p <= '0;\n  else        p <= a * b;","in":["opnd_q, coef_q"],"out":["prod_flat"],"deps":["operand select"]},"tree":{"x":880,"y":450,"w":200,"h":70,"t":"acc_reduce","s":"adder tree, 1 reg per level","l":["ACC_W = 36: cannot overflow"],"stage":"D","file":"rtl/dsp/acc_reduce.sv","role":"Balanced binary adder tree over the MAC products.","resp":["log2(MAC_UNITS) levels, one register each; zero-padded to a power of two","All arithmetic at ACC_W = DATA_W + COEF_W + log2(NTAPS_MAX) bits: no saturation logic and no overflow flag are needed"],"code":"node[i] <= node[2*i] + node[2*i + 1];   // one level per clock\nassign acc = node[1];","in":["prod_flat"],"out":["tree_acc"],"deps":["mac_array"]},"fold":{"x":880,"y":550,"w":200,"h":60,"t":"fold accumulator","s":"adds the P partial sums","l":["restarts on the first pass"],"stage":"D","file":"rtl/dsp/fir_core.sv:239-259","role":"Temporal accumulation across passes.","resp":["acc_next = acc_first ? tree_acc : fold_acc + tree_acc","On the last pass the sum is captured as result_acc"],"code":"assign acc_next = acc_first ? tree_acc : (fold_acc + tree_acc);","in":["tree_acc, acc_vld / first / last / tlast"],"out":["result_acc"],"deps":["acc_reduce","control chain"]},"rs":{"x":880,"y":640,"w":200,"h":60,"t":"round_sat","s":"round, clamp, output reg","l":["trunc · half-up · convergent"],"stage":"D","file":"rtl/dsp/round_sat.sv","role":"The one place information is lost. Converts the accumulator back to the 16-bit sample format.","resp":["floor = acc >>> 15; guard = acc[14]; sticky = |acc[13:0]; lsb = acc[15]","TRUNC: inc = 0; HALF_UP: inc = guard; CONVERGENT: inc = guard & (sticky | lsb), ties to even","Clamp to [−32768, 32767] (asymmetric) or [−32767, 32767] (symmetric); sat_event marks any clamp","The result is registered; that register's valid bit is core_out_valid"],"code":"CONVERGENT: inc = guard & (sticky | lsb);\nassign sat_hi = (rounded > max_pos);\nassign sat_lo = (rounded < min_neg);   // min_neg = sym ? -max_pos : -max_pos - 1","in":["result_acc","cfg_round_mode, cfg_sat_mode"],"out":["out_data, out_last, out_valid, out_sat"],"deps":["fold accumulator","csr_regfile"]},"chain":{"x":1090,"y":350,"w":140,"h":170,"t":"control chain","s":"record per pass","l":["delay = 2 + log2(MAC)","so each pass record","meets its own sum","(runtime latency)"],"stage":"D","file":"rtl/dsp/fir_core.sv:196-232","role":"Carries each pass's control record down the datapath alongside the data.","resp":["Latency is 5 + log2(MAC_UNITS) + (P−1) and P depends on CFG.NTAPS at runtime, so valid cannot come from a fixed-depth shadow register","Only ch_vld is cleared by a flush; the rest are don't-care while invalid","The flush clear of ch_vld and result_vld is the fix for the bug found in revision 3 (verif/as_found/fir_core.sv)"],"code":"ch_vld[0]   <= pass_vld;\n...\nfor (int i = 1; i < DLY; i++) ch_vld[i] <= ch_vld[i-1];","in":["pass_vld / first / last / tlast"],"out":["acc_vld / first / last / tlast"],"deps":["fir_ctrl","fold accumulator"]},"irq":{"x":1260,"y":90,"w":215,"h":60,"t":"IRQ line","s":"irq = |(STATUS & ENABLE)","l":["FRAME_DONE · SAT_EVENT · CFG_ERR"],"stage":"O","file":"rtl/control/csr_regfile.sv:448","role":"Level interrupt output.","resp":["Set by a TLAST beat leaving the IP, an output saturation, or ENABLE with an illegal CFG; cleared by writing 1 to IRQ_STATUS"],"code":"","in":["irq from csr_regfile"],"out":[],"deps":[],"ext":1},"snk":{"x":1260,"y":430,"w":215,"h":90,"t":"AXI4-Stream sink","s":"tb: m_axis_tready pattern","l":["TREADY held low to stall the IP"],"stage":"O","file":"tb/cocotb/env/axis_driver.py","role":"Consumes output beats at a rate the test chooses.","resp":["A long stall fills the output FIFO and then, through the credit counter, the input"],"code":"","in":["m_axis_tdata / tlast / tvalid"],"out":["m_axis_tready"],"deps":[],"ext":1},"outfifo":{"x":1260,"y":590,"w":215,"h":110,"t":"out_fifo","s":"axis_fifo · depth 8","l":["push without a ready check:","credits make overflow impossible","output stable while TREADY low"],"stage":"O","file":"rtl/axi_stream/axis_fifo.sv; rtl/top/axis_fir_top.sv:246-263","role":"Elastic output buffer; the end of the credit loop.","resp":["s_tready is ignored: a slot is guaranteed for every admitted sample","out_pop = m_axis_tvalid && m_axis_tready returns a credit and, for a TLAST beat, signals a frame boundary","Not flushed by CTRL.FLUSH: dropping TVALID on a beat already offered would violate AXI4-Stream"],"code":"assign out_push = core_out_valid;\nassign out_pop  = m_axis_tvalid && m_axis_tready;\nassign evt_frame_done = out_pop && m_axis_tlast;","in":["out_valid, out_data, out_last","m_axis_tready"],"out":["m_axis_tdata / tlast / tvalid","out_pop, out_count, full"],"deps":["round_sat","AXI4-Stream sink","credit_ctr"]},"chk":{"x":270,"y":760,"w":1205,"h":56,"t":"fir_checkers (bind)","s":"verif/fir_checkers.sv · verif/fir_binds.sv · bound to the slave, both FIFOs, credit counter, FSM, banks, register file, delay line, output stage and top","l":["105 assertions · 81 cover points · 4 scoreboards · runs inside the cocotb suites under Verilator 5.052"],"stage":"","file":"verif/fir_checkers.sv, verif/fir_binds.sv","role":"Assertions and cover points attached by bind; not part of the synthesised design.","resp":["a_credit_inv: credits + dp_count + out_count == OUT_FIFO_DEPTH, every cycle","a_no_drop: a push never meets a full output FIFO; a_dp_nonneg: a result never appears with no sample in flight","Protocol checks on both AXI4-Lite and both stream ports","95 injected bugs: 93 caught (15 only by an assertion), 2 proved equivalent"],"code":"bind credit_ctr    fir_credit_chk #(.MAX_CREDITS(MAX_CREDITS)) u_chk (.*);\na_credit_inv: assert property (... int'(credits) + int'(dp_count) + int'(out_count) == OUT_FIFO_DEPTH);\na_no_drop:    assert property (... out_push |-> !out_fifo_full || out_pop);","in":["Internal and port signals by name"],"out":["Assertion failures, cover hits"],"deps":["All blocks"],"ext":1,"ver":1}},"BARS":{},"EDGES":[{"id":"E01","from":"axil_m","to":"axil","type":"mem","label":"AW, W, AR","pts":[[230,125],[270,125]],"desc":"Address, data, strobes and VALIDs."},{"id":"E02","from":"axil","to":"axil_m","type":"mem","label":"B, R","pts":[[270,160],[230,160]],"desc":"Write response, read data and response."},{"id":"E03","from":"axil","to":"csr","type":"mem","label":"reg_wen · waddr · wdata · wstrb · reg_ren · raddr","pts":[[415,190],[415,215]],"desc":"A single-cycle register write or read request."},{"id":"E04","from":"csr","to":"axil","type":"mem","label":"reg_werr · reg_rdata · reg_rerr","pts":[[515,215],[515,190]],"desc":"Combinational answer: SLVERR for unmapped or blocked accesses."},{"id":"E05","from":"csr","to":"coef","type":"data","label":"coef_we · waddr · wdata","pts":[[480,395],[480,435]],"desc":"A coefficient write goes to the shadow bank."},{"id":"E06","from":"coef","to":"csr","type":"data","label":"coef_rdata · COEFF_PENDING","pts":[[330,435],[330,395]],"desc":"Shadow-bank readback and the pending flag for STATUS."},{"id":"E07","from":"csr","to":"coef","type":"ctl","label":"cmd_coeff_commit","pts":[[405,395],[405,435]],"desc":"One-cycle pulse from CTRL.COEFF_COMMIT."},{"id":"E08","from":"csr","to":"ctrl","type":"ctl","label":"ctrl_enable · cfg_ntaps · cfg_symmetric · cfg_illegal","pts":[[560,255],[620,255]],"desc":"Run enable and the configuration the scheduler needs."},{"id":"E09","from":"csr","to":"prep","type":"ctl","label":"cfg_ntaps · cfg_symmetric","pts":[[560,245],[566,245],[566,70],[1085,70],[1085,235],[1080,235]],"desc":"Which taps are active, and whether the pre-adder is used."},{"id":"E10","from":"csr","to":"rs","type":"ctl","label":"cfg_round_mode · cfg_sat_mode","pts":[[560,240],[569,240],[569,66],[1087,66],[1087,655],[1080,655]],"desc":"Rounding mode and clamp mode for the output stage."},{"id":"E11","from":"csr","to":"irq","type":"trap","label":"irq","pts":[[560,235],[572,235],[572,62],[1367,62],[1367,90]],"desc":"|(IRQ_STATUS & IRQ_ENABLE)."},{"id":"E12","from":"csr","to":"ctrl","type":"trap","label":"soft_clear = cmd_soft_reset | cmd_flush","pts":[[560,270],[620,270]],"desc":"Also drives the input FIFO, the credit counter and fir_core's clear (delay line, control chain, result registers). The output FIFO is not cleared."},{"id":"E13","from":"ctrl","to":"csr","type":"ctl","label":"sts_busy · sts_draining · evt_sample","pts":[[620,320],[560,320]],"desc":"STATUS bits and the SAMPLE_CNT event."},{"id":"E14","from":"infifo","to":"csr","type":"ctl","label":"in_fifo_empty","pts":[[620,500],[596,500],[596,348],[560,348]],"desc":"STATUS.IN_EMPTY."},{"id":"E15","from":"outfifo","to":"csr","type":"ctl","label":"out_fifo_full · evt_frame_done","pts":[[1350,700],[1350,724],[592,724],[592,312],[560,312]],"desc":"STATUS.OUT_FULL, and the FRAME_DONE event for FRAME_CNT and the interrupt."},{"id":"E16","from":"rs","to":"csr","type":"trap","label":"evt_saturate","pts":[[940,700],[940,732],[598,732],[598,300],[560,300]],"desc":"core_out_valid && out_sat: sets the sticky SAT status and the SAT_EVENT interrupt."},{"id":"E20","from":"src","to":"infifo","type":"data","label":"s_axis_tdata · tlast · tvalid","pts":[[230,545],[620,545]],"desc":"Samples enter the input FIFO whenever it is not full."},{"id":"E21","from":"infifo","to":"src","type":"ctl","label":"s_axis_tready = !full","pts":[[620,560],[230,560]],"desc":"Depends on FIFO occupancy only, never on the output side."},{"id":"E22","from":"infifo","to":"ctrl","type":"ctl","label":"in_tvalid · in_tlast","pts":[[620,490],[612,490],[612,335],[620,335]],"desc":"A sample is available at the head of the FIFO."},{"id":"E23","from":"ctrl","to":"infifo","type":"ctl","label":"in_tready = sample_start","pts":[[620,345],[604,345],[604,515],[620,515]],"desc":"Pops the FIFO on admission."},{"id":"E24","from":"infifo","to":"dl","type":"data","label":"in_tdata","pts":[[840,520],[844,520],[844,130],[880,130]],"desc":"The admitted sample enters the delay line."},{"id":"E25","from":"ctrl","to":"dl","type":"ctl","label":"shift_en","pts":[[840,225],[854,225],[854,150],[880,150]],"desc":"Once per sample, not once per pass."},{"id":"E26","from":"ctrl","to":"prep","type":"ctl","label":"tap_base = pass × MAC_UNITS","pts":[[840,300],[880,300]],"desc":"Selects which taps this pass handles."},{"id":"E27","from":"ctrl","to":"chain","type":"ctl","label":"pass_vld · first · last · tlast","pts":[[840,245],[869,245],[869,78],[1155,78],[1155,350]],"desc":"The pass record that travels beside the data."},{"id":"E28","from":"dl","to":"prep","type":"data","label":"taps_flat","pts":[[980,170],[980,200]],"desc":"Every tap at once."},{"id":"E29","from":"coef","to":"prep","type":"data","label":"coef_flat (active bank)","pts":[[560,472],[859,472],[859,270],[880,270]],"desc":"The coefficients currently in use."},{"id":"E30","from":"prep","to":"mac","type":"data","label":"opnd_q · coef_q","pts":[[980,320],[980,350]],"desc":"Registered operands and coefficients."},{"id":"E31","from":"mac","to":"tree","type":"data","label":"prod_flat","pts":[[980,420],[980,450]],"desc":"Exact 33-bit products."},{"id":"E32","from":"tree","to":"fold","type":"data","label":"tree_acc","pts":[[980,520],[980,550]],"desc":"Sum of this pass."},{"id":"E33","from":"chain","to":"fold","type":"ctl","label":"acc_vld · first · last · tlast","pts":[[1155,520],[1155,580],[1080,580]],"desc":"Tells the fold accumulator when to restart and when a sample is complete."},{"id":"E34","from":"fold","to":"rs","type":"data","label":"result_acc","pts":[[980,610],[980,640]],"desc":"Full-precision sum of all passes."},{"id":"E35","from":"rs","to":"outfifo","type":"data","label":"out_data · out_last · out_valid","pts":[[1080,675],[1260,675]],"desc":"The finished sample is pushed with no ready check."},{"id":"E36","from":"rs","to":"ctrl","type":"ctl","label":"core_out_valid","pts":[[880,690],[864,690],[864,340],[840,340]],"desc":"Decrements dp_count so DRAIN knows when the datapath is empty."},{"id":"E37","from":"outfifo","to":"snk","type":"data","label":"m_axis_tdata · tlast · tvalid","pts":[[1330,590],[1330,520]],"desc":"Output beat."},{"id":"E38","from":"snk","to":"outfifo","type":"ctl","label":"m_axis_tready","pts":[[1410,520],[1410,590]],"desc":"The consumer's ready."},{"id":"E39","from":"outfifo","to":"credit","type":"fwd","label":"out_pop → restore · credit_reload","pts":[[1320,700],[1320,716],[849,716],[849,440],[840,440]],"desc":"A beat left the IP: one credit back. credit_reload is OUT_FIFO_DEPTH − occupancy for a flush."},{"id":"E40","from":"credit","to":"ctrl","type":"fwd","label":"have_credit","pts":[[780,385],[780,355]],"desc":"Admission needs a free credit."},{"id":"E41","from":"ctrl","to":"credit","type":"fwd","label":"consume","pts":[[700,355],[700,385]],"desc":"A credit is taken when a sample is admitted."},{"id":"E42","from":"outfifo","to":"coef","type":"ctl","label":"frame_boundary (TLAST pop)","pts":[[1290,700],[1290,708],[520,708],[520,520]],"desc":"A pending bank swap happens when a TLAST beat leaves the IP."},{"id":"E43","from":"ctrl","to":"coef","type":"ctl","label":"idle = !sts_busy","pts":[[620,352],[586,352],[586,450],[560,450]],"desc":"A pending bank swap also happens at once when the FSM is idle."},{"id":"E50","from":"chk","to":"coef","type":"ver","label":"bank and pending checks","pts":[[460,760],[460,520]]},{"id":"E51","from":"chk","to":"infifo","type":"ver","label":"FIFO and stream rules","pts":[[730,760],[730,570]]},{"id":"E52","from":"chk","to":"rs","type":"ver","label":"output-stage and saturation rules","pts":[[1000,760],[1000,700]]},{"id":"E53","from":"chk","to":"outfifo","type":"ver","label":"a_credit_inv · a_no_drop","pts":[[1400,760],[1400,700]]}],"GROUPS":[["Host side (testbench)",["axil_m","src","snk","irq"]],["Control plane",["axil","csr","coef","rst"]],["Admission & flow control",["infifo","ctrl","credit"]],["fir_core datapath",["dl","prep","mac","tree","fold","rs","chain"]],["Output",["outfifo"]],["Verification",["chk"]]],"PATHS":[{"g":"Control plane","id":"prog","name":"Program a coefficient over AXI4-Lite","desc":"One AXI4-Lite write into the coefficient window.","steps":[["n:axil_m","Software writes COEF[k] (address 0x400 + 4k) with AWVALID and WVALID."],["E01","The slave accepts AW and W (here in the same cycle) as long as no earlier write response is pending."],["E03","reg_wen fires: a one-cycle write request reaches the register file."],["n:csr","Address 0x400-0x7FF decodes as the coefficient region; the index must be below NTAPS_MAX."],["E05","coef_we, the index and the low 16 bits of the data go to the coefficient bank."],["n:coef","The word lands in the shadow bank; the active bank, and therefore the datapath, is untouched."],["E04","reg_werr is low, so the response will be OKAY."],["E02","BVALID with BRESP = OKAY is held until the master takes it. Another write cannot start until then."]]},{"g":"Control plane","id":"commit","name":"Commit a coefficient bank","desc":"Swap at a frame boundary, or at once when idle.","steps":[["E01","Software writes CTRL with the COEFF_COMMIT bit (bit 2)."],["E03","The write reaches the register file…"],["E07","…which turns the bit into a one-cycle cmd_coeff_commit pulse."],["n:coef","pending is set; STATUS.COEFF_PENDING reads 1."],["E43","If the FSM is idle the banks swap on the next cycle."],["E42","Otherwise the swap waits for a TLAST beat to leave the IP, so a frame in progress keeps the old coefficients."],["E06","pending drops, and the freshly active bank feeds the datapath."],["E29","From the next sample the operand select reads the new coefficients."]]},{"g":"Control plane","id":"cfgerr","name":"Illegal CFG and SLVERR","desc":"ENABLE with NTAPS = 0 enters CFGERR; refused writes return SLVERR.","steps":[["E01","Software sets CTRL.ENABLE while CFG.NTAPS is 0 (or above NTAPS_MAX, or the rounding mode is 3)."],["E08","cfg_illegal reaches the FSM together with ctrl_enable."],["n:ctrl","IDLE → CFGERR instead of RUN; the FSM stays there until ENABLE drops."],["E13","STATUS reads busy while in CFGERR."],["n:csr","ENABLE with an illegal CFG sets the sticky CFG_ERR status and the CFG_ERR interrupt every cycle, so writing 1 to IRQ_STATUS cannot clear it while ENABLE stays high."],["E11","With IRQ_ENABLE set, irq goes high."],["E04","A CFG write now returns SLVERR (CFG is read-only while the FSM is not IDLE); so does a write to an unmapped address or a coefficient index at or above NTAPS_MAX."],["E02","BRESP = SLVERR (10). A write to a read-only register such as ID is accepted and ignored."]]},{"g":"Streaming","id":"sample","name":"One sample through the filter","desc":"From TVALID to a beat on the output.","steps":[["n:src","The source offers a sample with TVALID."],["E20","It is pushed into the input FIFO as long as the FIFO is not full."],["E22","in_tvalid tells fir_ctrl a sample is waiting."],["E40","have_credit is high: at least one slot is reserved in the output FIFO."],["E23","sample_start = RUN & data & credit & no pass running: the FIFO is popped."],["E41","One credit is taken."],["E25","shift_en moves the delay line by one sample."],["E24","The popped sample enters x[n]."],["E26","The scheduler selects pass 0: tap_base = 0."],["E28","All taps are read at once…"],["E29","…together with the active coefficients."],["E30","Operand and coefficient registers capture the selection (pre-adder applied if CFG.SYM)."],["E31","Each MAC multiplies; the products are registered."],["E32","The adder tree sums them, one level per clock."],["E33","The control record arrives with the sum: this is the last pass."],["E34","The fold accumulator hands the full-precision result on."],["E35","round_sat rounds and clamps; the result is pushed into the output FIFO."],["E36","core_out_valid tells the FSM one sample has left the datapath."],["E37","TVALID goes high on the output; the beat leaves when the sink raises TREADY."],["E39","That pop returns the credit."]]},{"g":"Streaming","id":"fold","name":"Folded passes (MAC_UNITS < N_eff)","desc":"P passes per sample, delay line shifts once.","steps":[["n:ctrl","P = ceil(N_eff / MAC_UNITS) with N_eff = ceil(N/2) when symmetric, else N."],["E25","The delay line shifts once, at admission."],["E26","Pass 0: tap_base = 0, taps 0 … MAC_UNITS−1."],["E27","The pass record {vld, first, last, tlast} starts down the control chain."],["E26","Pass 1: tap_base = MAC_UNITS. The same history is read again; it has not shifted."],["E32","Each pass's tree output reaches the fold accumulator."],["E33","The first-pass flag restarts the accumulator; later passes add to it."],["E34","On the last pass the sum is complete."],["E23","The next sample may be admitted on the last pass of this one, so the initiation interval is exactly P cycles."]]},{"g":"Streaming","id":"sym","name":"Symmetric pre-adder","desc":"CFG.SYM halves the multiplies.","steps":[["E09","CFG.SYM = 1 and NTAPS reach the operand select; N_eff = ceil(N/2)."],["E28","Both ends of the delay line are read at once."],["n:prep","Operand = x[n-k] + x[n-(N-1-k)] for k < N_eff, with one extra bit of width."],["E29","Only the first half of the coefficients is used (h[k] = h[N-1-k])."],["n:prep","For odd N the centre tap is taken once, not added to itself."],["E30","The sum goes through the same multipliers as the asymmetric case."]]},{"g":"Flow control","id":"credit","name":"Credits and output back-pressure","desc":"Why the output FIFO cannot overflow.","steps":[["E38","The sink holds m_axis_tready low."],["n:outfifo","Output beats pile up in the output FIFO."],["E39","No pops, so no credits come back."],["n:credit","Each admission took a credit: when the counter reaches 0 no more samples can be admitted."],["E40","have_credit goes low."],["n:ctrl","sample_start stays low; the FSM keeps the sample at the head of the input FIFO."],["E21","The input FIFO fills and s_axis_tready falls. Back-pressure arrived at the source without a combinational path."],["E39","When the sink resumes, each pop returns a credit and admission restarts."]]},{"g":"Flow control","id":"drain","name":"Dropping ENABLE: graceful stop","desc":"RUN → DRAIN → IDLE, no sample lost.","steps":[["E01","Software clears CTRL.ENABLE while samples are in the datapath."],["E08","The FSM sees ctrl_enable low."],["n:ctrl","RUN → DRAIN: no new admission, but passes in progress finish."],["E36","Each result leaving the datapath decrements dp_count."],["n:ctrl","DRAIN → IDLE when no pass is running and dp_count is 0."],["E13","STATUS goes idle; SAMPLE_CNT now equals the number of beats that left."]]},{"g":"Flow control","id":"flush","name":"Flush with samples in flight","desc":"CTRL.FLUSH or SOFT_RESET.","steps":[["E01","Software writes CTRL with FLUSH (bit 3) or SOFT_RESET (bit 1)."],["E12","soft_clear = cmd_soft_reset | cmd_flush: one cycle."],["n:infifo","The input FIFO drops its contents."],["n:dl","The delay line is zeroed."],["n:chain","ch_vld and result_vld are cleared, so samples that were in the pipeline never reach the output."],["n:outfifo","The output FIFO is not cleared: beats already offered stay valid."],["E39","credit_reload = OUT_FIFO_DEPTH − occupancy puts the counter back in step with what is still buffered."],["n:credit","Without that reconciliation, credits would exceed the free space and a long stall would lose beats (the bug fixed in revision 3)."]]},{"g":"Numerics","id":"sat","name":"Round, saturate, interrupt","desc":"The only place numbers can be lost.","steps":[["E34","The accumulator holds the exact sum (36 bits)."],["E10","CFG supplies the rounding mode and the clamp mode."],["n:rs","Drop 15 fractional bits: floor, guard, sticky and lsb pick the increment per mode."],["n:rs","Clamp to [−32768, 32767] asymmetric or [−32767, 32767] symmetric; any clamp raises sat_event."],["E16","evt_saturate sets the sticky STATUS.SAT bit and the SAT_EVENT interrupt status."],["E11","With the bit enabled in IRQ_ENABLE, irq goes high."],["E01","Software clears it with a write of 1 to IRQ_STATUS; a new saturation on the same cycle wins."]]},{"g":"Verification","id":"verify","name":"Bound assertions and cover points","desc":"What watches the design.","steps":[["n:chk","fir_checkers is attached with bind to the slave, both FIFOs, credit counter, FSM, banks, register file, delay line, output stage and top."],["E53","a_credit_inv and a_no_drop watch the credit loop and the output FIFO."],["E51","Stream rules watch the input FIFO."],["E52","Output-stage rules watch round_sat and saturation."],["E50","Bank and pending rules watch the coefficient banks."],["n:chk","95 deliberate bugs were injected: 93 caught, 15 of them only by an assertion; the other 2 are proved equivalent."]]}]};
+const {META,VIEW,BANDS,TYPES,NODES,BARS,EDGES,GROUPS,PATHS}=DATA;
+// Cycle-accurate model of axis_fir_top (rtl/top/axis_fir_top.sv and every module under it), plus the testbench-side AXI4-Lite master,
+// AXI4-Stream source and sink. fir_step() mirrors the always_comb / always_ff blocks; its comments name the RTL block it copies.
+// Instance modelled: DATA_W=COEF_W=16, NTAPS_MAX=16, IN_FIFO_DEPTH=4, OUT_FIFO_DEPTH=8, SYMMETRIC_EN=1, MAC_UNITS selectable (1, 2, 4).
+const clog2=n=>{let r=0;while((1<<r)<n)r++;return r;};
+const sx=(v,b)=>{v&=(1<<b)-1;return v>=(1<<(b-1))?v-(1<<b):v;};
+const u16=v=>v&0xffff, h4=v=>(v&0xffff).toString(16).padStart(4,'0'), h8=v=>(v>>>0).toString(16).padStart(8,'0');
+const hx=v=>'0x'+(v>>>0).toString(16), mod=(x,m)=>((x%m)+m)%m;
+function applyStrb(o,n,s){ let m=0; for(let b=0;b<4;b++){ const sel=((s>>b)&1)?n:o; m|=((sel>>>(8*b))&255)<<(8*b); } return m>>>0; }
+const REG={ID:0,CAP:4,CTRL:8,CFG:12,STATUS:16,IRQ_ST:20,IRQ_EN:24,SCNT:28,FCNT:32};
+const CSRA=[0,4,8,12,16,20,24,28,32], ROA=[0,4,16,28,32];
+const STN=['IDLE','RUN','DRAIN','CFGERR'];
+function mkP(mac){ const L=clog2(mac); return {DW:16,CW:16,NMAX:16,MAC:mac,INF:4,OUTF:8,LOG2MAC:L,LEVELS:L,NPAD:1<<L,DLY:2+L,IDXW:4,ACC_W:36,SHIFT:15,CNTW:clog2(8+1),SYM_EN:1}; }
+const fifoNew=D=>({mem:new Array(D).fill(null),wr:0,rd:0,D,L:clog2(D)});
+const fCnt=f=>(f.wr-f.rd)&(2*f.D-1), fEmpty=f=>f.wr===f.rd, fFull=f=>(((f.wr>>f.L)&1)!==((f.rd>>f.L)&1))&&((f.wr&(f.D-1))===(f.rd&(f.D-1)));
+const fCopy=f=>({mem:f.mem.slice(),wr:f.wr,rd:f.rd,D:f.D,L:f.L});
+function mkS(P){
+  const z=n=>new Array(n).fill(0);
+  return {P,aw_full:0,w_full:0,awaddr_q:0,wdata_q:0,wstrb_q:0,bvalid:0,bresp:0,rvalid:0,rdata_q:0,rresp_q:0,
+    en:0,ntaps:0,round:0,sat:0,sym:0,irq_st:0,irq_en:0,sat_sticky:0,cfgerr_sticky:0,scnt:0,fcnt:0,c_rst:0,c_commit:0,c_flush:0,c_cnt:0,
+    bank0:new Array(P.NMAX).fill(null),bank1:new Array(P.NMAX).fill(null),bank_sel:0,pending:0,
+    inf:fifoNew(P.INF),outf:fifoNew(P.OUTF),credits:P.OUTF,
+    state:0,busy:0,pcnt:0,tlast_q:0,dp:0,cur_tag:-1,
+    dl:z(P.NMAX),opnd:z(P.MAC),coefq:z(P.MAC),prod:z(P.MAC),node:z(P.NPAD),
+    ch_vld:z(P.DLY),ch_first:z(P.DLY),ch_last:z(P.DLY),ch_tlast:z(P.DLY),ch_tag:z(P.DLY).fill(-1),
+    fold:0,res_acc:0,res_vld:0,res_tlast:0,res_tag:-1,out_valid:0,out_data:0,out_last:0,out_sat:0,out_tag:-1};
+}
+// rtl/dsp/round_sat.sv
+function roundSat(acc,rm,sm,SH){
+  const f=Math.floor(acc/2**SH), guard=Math.floor(mod(acc,2**SH)/2**(SH-1)), sticky=mod(acc,2**(SH-1))!==0?1:0, lsb=mod(f,2);
+  const inc=rm===1?guard:rm===2?(guard&(sticky|lsb)):0, r=f+inc, mx=2**15-1, mn=sm?-mx:-mx-1;
+  const hi=r>mx, lo=r<mn;
+  return {y:hi?mx:lo?mn:r,sat:hi||lo,floor:f,guard,sticky,lsb,inc};
+}
+// One clock cycle. inp: awvalid awaddr wvalid wdata wstrb bready arvalid araddr rready tvalid tdata tlast tready (+ tag for display)
+function fir_step(S,inp){
+  const P=S.P, N={...S}, g={};
+  // ---------------------------------------------------------------- axil_slave
+  const slot=!S.bvalid; g.awready=slot&&!S.aw_full; g.wready=slot&&!S.w_full;
+  g.aw_hs=!!(inp.awvalid&&g.awready); g.w_hs=!!(inp.wvalid&&g.wready);
+  const aw_have=S.aw_full||g.aw_hs, w_have=S.w_full||g.w_hs;
+  g.reg_wen=aw_have&&w_have&&slot;
+  const waddr=S.aw_full?S.awaddr_q:inp.awaddr, wd=S.w_full?S.wdata_q:inp.wdata, ws=S.w_full?S.wstrb_q:inp.wstrb;
+  g.arready=!S.rvalid; g.ar_hs=!!(inp.arvalid&&g.arready); g.reg_ren=g.ar_hs; const raddr=inp.araddr;
+  // ---------------------------------------------------------------- csr_regfile: decode
+  const w12=waddr&0xfff, r12=raddr&0xfff;
+  const w_csr_region=((w12>>8)&15)===0, w_coef_region=((w12>>10)&3)===1, w_idx=(w12>>2)&255, w_coef_valid=w_coef_region&&w_idx<P.NMAX;
+  const w_csr_mapped=w_csr_region&&CSRA.includes(w12), w_is_ro=ROA.includes(w12);
+  const r_csr_region=((r12>>8)&15)===0, r_coef_region=((r12>>10)&3)===1, r_idx=(r12>>2)&255, r_coef_valid=r_coef_region&&r_idx<P.NMAX;
+  const r_csr_mapped=r_csr_region&&CSRA.includes(r12);
+  const sts_busy=S.state!==0, sts_drain=S.state===2;
+  const cfg_illegal=(S.ntaps===0||S.ntaps>P.NMAX)||S.round===3;
+  const w_mapped=w_csr_mapped||w_coef_valid, cfg_wr_blocked=w_csr_mapped&&w12===REG.CFG&&sts_busy;
+  const reg_werr=!w_mapped||cfg_wr_blocked;
+  const csr_wr=g.reg_wen&&w_csr_mapped&&!w_is_ro&&!reg_werr;
+  const ctrl_rd=S.en, cfg_rd=(S.ntaps|(S.round<<16)|(S.sat<<20)|(S.sym<<24))>>>0;
+  const wr_ctrl=applyStrb(ctrl_rd,wd,ws), wr_cfg=applyStrb(cfg_rd,wd,ws), wr_ie=applyStrb(S.irq_en,wd,ws), wr_clr=applyStrb(0,wd,ws);
+  const cap=(((P.SYM_EN<<31)|((P.ACC_W&127)<<24)|(P.CW<<16)|(P.DW<<8)|((P.LOG2MAC&15)<<4)|(clog2(P.NMAX)&15))>>>0);
+  g.cap=cap;
+  // ---------------------------------------------------------------- shared signals
+  const soft_clear=!!(S.c_rst||S.c_flush);
+  const in_tvalid=!fEmpty(S.inf), inh=S.inf.mem[S.inf.rd&(P.INF-1)]||{d:0,l:0,id:-1};
+  const out_tvalid=!fEmpty(S.outf), outh=S.outf.mem[S.outf.rd&(P.OUTF-1)]||{d:0,l:0,id:-1};
+  const out_pop=!!(out_tvalid&&inp.tready), out_push=!!S.out_valid;
+  const have_credit=S.credits!==0;
+  // ---------------------------------------------------------------- fir_ctrl (comb)
+  const h_taps=((S.ntaps+1)>>1)&511, n_eff=S.sym?h_taps:S.ntaps, n_pass=((n_eff+P.MAC-1)&511)>>P.LOG2MAC, p_last=n_pass===0?0:(n_pass-1)&511;
+  const last_pass=!!S.busy&&S.pcnt===p_last, can_accept=!S.busy||last_pass;
+  const sample_start=S.state===1&&in_tvalid&&have_credit&&can_accept;
+  const tap_base=(S.pcnt<<P.LOG2MAC)&511;
+  let state_n=S.state;
+  switch(S.state){ case 0: if(S.en) state_n=cfg_illegal?3:1; break; case 1: if(!S.en||S.c_flush) state_n=2; break;
+    case 2: if(!S.busy&&S.dp===0) state_n=0; break; case 3: if(!S.en) state_n=0; break; }
+  // events
+  const evt_frame_done=out_pop&&!!outh.l, evt_sat=!!(S.out_valid&&S.out_sat), cfg_err_event=!!(S.en&&cfg_illegal);
+  // ---------------------------------------------------------------- csr: read mux
+  const status_rd=((!sts_busy&&!sts_drain?1:0)|(sts_busy?2:0)|(S.pending?4:0)|(S.cfgerr_sticky?8:0)|(S.sat_sticky?16:0)|(fEmpty(S.inf)?32:0)|(fFull(S.outf)?64:0)|(sts_drain?128:0));
+  let rdata=0, rerr=1;
+  if(r_csr_mapped){ rerr=0; rdata={0:0x46495230,4:cap,8:ctrl_rd,12:cfg_rd,16:status_rd,20:S.irq_st,24:S.irq_en,28:S.scnt,32:S.fcnt}[r12]>>>0; }
+  else if(r_coef_valid){ rerr=0; rdata=((S.bank_sel?S.bank0:S.bank1)[r_idx])||0; }
+  g.rdata_comb=rdata; g.rerr=rerr; g.reg_werr=reg_werr;
+  // ---------------------------------------------------------------- axil_slave: registers
+  N.aw_full=S.aw_full; N.w_full=S.w_full; N.bvalid=S.bvalid; N.bresp=S.bresp; N.awaddr_q=S.awaddr_q; N.wdata_q=S.wdata_q; N.wstrb_q=S.wstrb_q;
+  if(g.reg_wen){ N.aw_full=0; N.w_full=0; N.bvalid=1; N.bresp=reg_werr?2:0; }
+  else { if(g.aw_hs){ N.aw_full=1; N.awaddr_q=inp.awaddr; } if(g.w_hs){ N.w_full=1; N.wdata_q=inp.wdata; N.wstrb_q=inp.wstrb; } }
+  if(S.bvalid&&inp.bready) N.bvalid=0;
+  if(g.ar_hs){ N.rvalid=1; N.rdata_q=rdata; N.rresp_q=rerr?2:0; } else if(S.rvalid&&inp.rready) N.rvalid=0;
+  // ---------------------------------------------------------------- csr: registers
+  N.c_rst=0; N.c_commit=0; N.c_flush=0; N.c_cnt=0; N.en=S.en; N.ntaps=S.ntaps; N.round=S.round; N.sat=S.sat; N.sym=S.sym; N.irq_en=S.irq_en; N.irq_st=S.irq_st;
+  if(csr_wr){ switch(w12){
+    case REG.CTRL: N.en=wr_ctrl&1; N.c_rst=(wr_ctrl>>1)&1; N.c_commit=(wr_ctrl>>2)&1; N.c_flush=(wr_ctrl>>3)&1; N.c_cnt=(wr_ctrl>>4)&1; break;
+    case REG.CFG: N.ntaps=wr_cfg&511; N.round=(wr_cfg>>16)&3; N.sat=(wr_cfg>>20)&1; N.sym=P.SYM_EN?(wr_cfg>>24)&1:0; break;
+    case REG.IRQ_EN: N.irq_en=wr_ie&7; break;
+    case REG.IRQ_ST: N.irq_st=S.irq_st&~(wr_clr&7); break; } }
+  if(evt_frame_done) N.irq_st|=1; if(evt_sat) N.irq_st|=2; if(cfg_err_event) N.irq_st|=4;
+  N.sat_sticky=S.sat_sticky; N.cfgerr_sticky=S.cfgerr_sticky;
+  if(evt_sat) N.sat_sticky=1; if(cfg_err_event) N.cfgerr_sticky=1;
+  if(csr_wr&&w12===REG.IRQ_ST){ if((wr_clr&2)&&!evt_sat) N.sat_sticky=0; if((wr_clr&4)&&!cfg_err_event) N.cfgerr_sticky=0; }
+  if(S.c_cnt){ N.scnt=0; N.fcnt=0; } else { N.scnt=S.scnt+(sample_start?1:0); N.fcnt=S.fcnt+(evt_frame_done?1:0); }
+  g.irq=(S.irq_st&S.irq_en)!==0;
+  // ---------------------------------------------------------------- coeff_bank
+  const coef_we=!!(g.reg_wen&&w_coef_valid);
+  N.bank0=S.bank0; N.bank1=S.bank1;
+  if(coef_we){ if(S.bank_sel){ N.bank0=S.bank0.slice(); N.bank0[w_idx]=wd&0xffff; } else { N.bank1=S.bank1.slice(); N.bank1[w_idx]=wd&0xffff; } }
+  const act=S.bank_sel?S.bank1:S.bank0, swap_now=!!(S.pending&&(evt_frame_done||!sts_busy));
+  N.bank_sel=S.bank_sel; N.pending=S.pending;
+  if(swap_now){ N.bank_sel=S.bank_sel^1; N.pending=S.c_commit; } else if(S.c_commit) N.pending=1;
+  // ---------------------------------------------------------------- fifos, credit
+  N.inf=fCopy(S.inf); N.outf=fCopy(S.outf);
+  const in_wr=!!(inp.tvalid&&!fFull(S.inf)); g.s_tready=!fFull(S.inf);
+  if(in_wr) N.inf.mem[S.inf.wr&(P.INF-1)]={d:inp.tdata,l:inp.tlast?1:0,id:inp.tag};
+  if(soft_clear){ N.inf.wr=0; N.inf.rd=0; } else { if(in_wr) N.inf.wr=(S.inf.wr+1)&(2*P.INF-1); if(in_tvalid&&sample_start) N.inf.rd=(S.inf.rd+1)&(2*P.INF-1); }
+  const out_wr=!!(out_push&&!fFull(S.outf));
+  if(out_wr) N.outf.mem[S.outf.wr&(P.OUTF-1)]={d:S.out_data,l:S.out_last,id:S.out_tag};
+  if(out_wr) N.outf.wr=(S.outf.wr+1)&(2*P.OUTF-1); if(out_pop) N.outf.rd=(S.outf.rd+1)&(2*P.OUTF-1);
+  const out_cnt=fCnt(S.outf), out_cnt_n=(out_cnt+(out_push?1:0)-(out_pop?1:0))&(2*P.OUTF-1);
+  const reload=((P.OUTF-(out_cnt_n&((1<<P.CNTW)-1)))&((1<<P.CNTW)-1));
+  if(soft_clear) N.credits=reload; else if(sample_start&&!out_pop) N.credits=S.credits-1; else if(!sample_start&&out_pop) N.credits=S.credits+1;
+  // ---------------------------------------------------------------- fir_ctrl (regs)
+  N.cur_tag=S.cur_tag;
+  if(soft_clear){ N.state=0; N.busy=0; N.pcnt=0; N.tlast_q=0; N.dp=0; }
+  else { N.state=state_n; if(sample_start){ N.tlast_q=inh.l; N.cur_tag=inh.id; }
+    if(S.busy){ if(last_pass){ N.busy=sample_start?1:0; N.pcnt=0; } else N.pcnt=S.pcnt+1; } else { N.busy=sample_start?1:0; N.pcnt=0; }
+    N.dp=S.dp+(sample_start?1:0)-(S.out_valid?1:0); }
+  const pass_vld=S.busy, pass_first=!!S.busy&&S.pcnt===0, pass_last=last_pass;
+  // ---------------------------------------------------------------- fir_core: delay line
+  N.dl=S.dl;
+  if(soft_clear) N.dl=new Array(P.NMAX).fill(0); else if(sample_start) N.dl=[inh.d].concat(S.dl.slice(0,P.NMAX-1));
+  // stage 1: operand / coefficient select (pre-adder)
+  const opn=[], cfc=[], act_=[];
+  for(let k=0;k<P.MAC;k++){
+    const kf=(tap_base+k)&511, ki=kf&(P.NMAX-1), near=S.dl[ki];
+    const active=S.sym?(kf<h_taps):(kf<S.ntaps);
+    if(S.busy&&active&&act[ki]===null) throw new Error('active tap '+ki+' accumulates a coefficient that was never written');   // the RTL would propagate X
+    cfc.push(active?sx(act[ki]||0,16):0);
+    const farf=(S.ntaps-1-kf)&511, fi=farf&(P.NMAX-1), far=S.dl[fi], mid=fi===ki;
+    opn.push(!active?0:!S.sym?near:mid?near:near+far); act_.push(active);
+  }
+  N.opnd=opn; N.coefq=cfc; N.prod=S.opnd.map((a,i)=>a*S.coefq[i]);
+  // stage 3: adder tree (one register per level)
+  const NP=P.NPAD; let tree_acc;
+  if(P.LEVELS===0){ tree_acc=S.prod[0]; N.node=S.node; }
+  else { N.node=S.node.slice(); for(let i=NP/2;i<NP;i++) N.node[i]=S.prod[2*i-NP]+S.prod[2*i+1-NP]; for(let i=1;i<NP/2;i++) N.node[i]=S.node[2*i]+S.node[2*i+1]; tree_acc=S.node[1]; }
+  // control chain
+  N.ch_vld=S.ch_vld.slice(); N.ch_first=S.ch_first.slice(); N.ch_last=S.ch_last.slice(); N.ch_tlast=S.ch_tlast.slice(); N.ch_tag=S.ch_tag.slice();
+  if(soft_clear){ N.ch_vld=new Array(P.DLY).fill(0); }
+  else { N.ch_vld[0]=pass_vld?1:0; N.ch_first[0]=pass_first?1:0; N.ch_last[0]=pass_last?1:0; N.ch_tlast[0]=S.tlast_q; N.ch_tag[0]=S.cur_tag;
+    for(let i=1;i<P.DLY;i++){ N.ch_vld[i]=S.ch_vld[i-1]; N.ch_first[i]=S.ch_first[i-1]; N.ch_last[i]=S.ch_last[i-1]; N.ch_tlast[i]=S.ch_tlast[i-1]; N.ch_tag[i]=S.ch_tag[i-1]; } }
+  const acc_vld=!!S.ch_vld[P.DLY-1], acc_first=!!S.ch_first[P.DLY-1], acc_last=!!S.ch_last[P.DLY-1], acc_tlast=S.ch_tlast[P.DLY-1], acc_tag=S.ch_tag[P.DLY-1];
+  // stage 4: temporal accumulation
+  const acc_next=acc_first?tree_acc:S.fold+tree_acc;
+  N.fold=S.fold; N.res_acc=S.res_acc; N.res_vld=S.res_vld; N.res_tlast=S.res_tlast; N.res_tag=S.res_tag;
+  if(soft_clear){ N.res_vld=0; }
+  else { if(acc_vld) N.fold=acc_next; N.res_vld=(acc_vld&&acc_last)?1:0; if(acc_vld&&acc_last){ N.res_acc=acc_next; N.res_tlast=acc_tlast; N.res_tag=acc_tag; } }
+  // stage 5: round / saturate / register
+  const rs=roundSat(S.res_acc,S.round,S.sat,P.SHIFT);
+  N.out_valid=S.out_valid; N.out_data=S.out_data; N.out_last=S.out_last; N.out_sat=S.out_sat; N.out_tag=S.out_tag;
+  if(soft_clear){ N.out_valid=0; N.out_sat=0; }
+  else { N.out_valid=S.res_vld?1:0; if(S.res_vld){ N.out_data=rs.y; N.out_last=S.res_tlast; N.out_sat=rs.sat?1:0; N.out_tag=S.res_tag; } else N.out_sat=0; }
+  Object.assign(g,{waddr,wd,ws,w12,r12,w_idx,r_idx,csr_wr,coef_we,w_csr_mapped,w_is_ro,w_mapped,cfg_wr_blocked,soft_clear,in_tvalid,inh,out_tvalid,outh,out_pop,out_push,have_credit,
+    h_taps,n_eff,n_pass,p_last,last_pass,sample_start,tap_base,state_n,evt_frame_done,evt_sat,cfg_err_event,sts_busy,sts_drain,swap_now,cfg_illegal,
+    acc_vld,acc_first,acc_last,acc_tag,tree_acc,acc_next,rs,in_wr,out_wr,out_cnt,in_cnt:fCnt(S.inf),reload,pass_vld,pass_first,pass_last,act:act_,opn,cfc});
+  return {g,N};
+}
+// ============================================================================================ testbench-side models
+const Q=x=>Math.max(-32768,Math.min(32767,Math.round(x*32768)));
+const cfgw=(n,rm,sat,sym)=>(n|(rm<<16)|(sat<<20)|(sym<<24))>>>0;
+const CO=i=>0x400+4*i;
+const W=(a,d,x={})=>({k:'w',a,d:d>>>0,...x}), Rd=(a,x={})=>({k:'r',a,...x});
+function regName(a){ const n={0:'ID',4:'CAPABILITY',8:'CTRL',12:'CFG',16:'STATUS',20:'IRQ_STATUS',24:'IRQ_ENABLE',28:'SAMPLE_CNT',32:'FRAME_CNT'};
+  if(n[a]!==undefined) return n[a]; if(a>=0x400&&a<0x800) return 'COEF['+((a-0x400)>>2)+']'; return hx(a); }
+function coefOps(list){ return list.map((v,i)=>W(CO(i),u16(v),i%3===1?{wlate:2}:i%3===2?{alate:2}:{})); }
+function items(vals,lastAt,d0=0){ return vals.map((v,i)=>({v,last:lastAt.includes(i)?1:0,d:i===0?d0:0})); }
+const SC=[
+ {id:'lowpass',name:'Programmed low-pass, N = 5',desc:'Software writes CFG and five coefficients over AXI4-Lite, commits the bank, sets ENABLE, then streams one 8-sample frame. Read CAPABILITY first, and SAMPLE_CNT, FRAME_CNT and STATUS at the end; CTRL.CNT_CLR then zeroes the counters.',
+  mk:o=>({ops:[Rd(REG.CAP),W(REG.CFG,cfgw(5,o.rnd,0,0)),...coefOps([Q(.1),Q(.2),Q(.4),Q(.2),Q(.1)]),W(REG.CTRL,4),W(REG.CTRL,1),Rd(REG.FCNT,{when:'drained'}),Rd(REG.SCNT),Rd(REG.STATUS),W(REG.CTRL,0x11),Rd(REG.SCNT),Rd(REG.FCNT)],
+    src:items([0,16384,16384,16384,16384,16384,0,0],[7]),sink:[]})},
+ {id:'sym',name:'Symmetric N = 5 (pre-adder)',desc:'Linear-phase filter with CFG.SYM = 1: only the first 3 coefficients are written (h[2] is the centre tap), and CFG is set one byte at a time with byte strobes (the other bytes of each write are junk that must be ignored). Each MAC adds x[n-k] and x[n-(N-1-k)] before multiplying; the centre tap is counted once.',
+  mk:o=>({ops:[W(REG.CFG,0x13370005,{s:1}),W(REG.CFG,(0xAB00FF00|(o.rnd<<16))>>>0,{s:4}),W(REG.CFG,0x01AA5500,{s:8}),...coefOps([2000,6000,12000]),W(REG.CTRL,4),W(REG.CTRL,1),Rd(REG.STATUS,{when:'drained'}),Rd(REG.SCNT)],
+    src:items([8000,-8000,12000,4000,-16000,2000,0,0],[7]),sink:[]})},
+ {id:'fold',name:'Resource folding, N = 8',desc:'Eight taps through MAC_UNITS multipliers need P = ceil(8 / MAC_UNITS) passes per sample. Change MAC_UNITS above: the initiation interval follows, and the input FIFO fills when P > 1.',
+  mk:o=>({ops:[W(REG.CFG,cfgw(8,o.rnd,0,0)),...coefOps(new Array(8).fill(4096)),W(REG.CTRL,4),W(REG.CTRL,1),Rd(REG.SCNT,{when:'drained'}),Rd(REG.FCNT)],
+    src:items([16000,16000,16000,16000,16000,16000],[5]),sink:[]})},
+ {id:'sat',name:'Saturation: symmetric then asymmetric',desc:'Gain close to 2 overflows the output format. Frame 1 clamps to ±32767 (symmetric); pairs of samples land exactly on the clamp boundaries. Then ENABLE is dropped, CFG switched to asymmetric and frame 2 clamps to −32768. SAT_EVENT is enabled in IRQ_ENABLE; software clears it with write-1-to-clear, and one clear lands on the very cycle of a new saturation, which must win.',
+  mk:o=>({ops:[W(REG.IRQ_EN,7),W(REG.CFG,cfgw(2,o.rnd,1,0)),...coefOps([32767,32767]),W(REG.CTRL,4),W(REG.CTRL,1),Rd(REG.IRQ_ST,{out:9}),W(REG.CTRL,0),Rd(REG.STATUS,{when:'idle'}),W(REG.IRQ_ST,7),W(REG.CFG,cfgw(2,o.rnd,0,0)),W(REG.CTRL,1),
+      W(REG.IRQ_ST,2,{when:'satlast'}),Rd(REG.IRQ_ST),Rd(REG.STATUS),W(REG.IRQ_ST,2),Rd(REG.STATUS),Rd(REG.IRQ_ST)],
+    src:[...items([30000,30000,-30000,-30000,0,0,-16385,-16384,0],[8]),...items([-16385,-16384,0,16385,16384,0,-30000,-30000,0,30000,30000],[10],60)],sink:[]})},
+ {id:'tie',name:'Rounding of exact ties',desc:'One tap of 0.5 on odd inputs gives results exactly half an LSB apart. The Rounding option (truncate, half-up, convergent) decides each of them; convergent rounds ties to even.',
+  mk:o=>({ops:[W(REG.CFG,cfgw(1,o.rnd,0,0)),W(CO(0),16384),W(REG.CTRL,4),W(REG.CTRL,1),Rd(REG.SCNT,{when:'drained'})],
+    src:items([1,3,5,-1,-3,-5,2,4],[7]),sink:[]})},
+ {id:'bp',name:'Output back-pressure and credits',desc:'The sink holds m_axis_tready low. The credit counter admits at most OUT_FIFO_DEPTH samples; then admission stops, the input FIFO fills and s_axis_tready falls. in_flight + out FIFO occupancy never exceeds 8.',
+  mk:o=>({ops:[W(REG.CFG,cfgw(1,o.rnd,0,0)),W(CO(0),24576),W(REG.CTRL,4),W(REG.CTRL,1),Rd(REG.STATUS,{t:40}),Rd(REG.STATUS,{when:'drained'}),Rd(REG.SCNT)],
+    src:items([100,200,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1500,1600,1700,1800,1900,2000],[19]),sink:[[1,70,0]]})},
+ {id:'reload',name:'Coefficient reload at a frame boundary',desc:'While frame A is in the filter, software writes new coefficients to the shadow bank and requests a commit. STATUS.COEFF_PENDING stays high until the TLAST beat of frame A leaves the IP, then the banks swap; frame B uses the new gain. A second commit is timed to land on the swap cycle itself: it is kept, so COEFF_PENDING stays high and the banks swap again at the next frame boundary.',
+  mk:o=>({ops:[W(REG.CFG,cfgw(1,o.rnd,0,0)),W(CO(0),16384),W(REG.CTRL,4),W(REG.CTRL,1),W(CO(0),32767,{t:13}),Rd(CO(0)),W(REG.CTRL,5),W(REG.CTRL,5,{when:'tlastq'}),Rd(REG.STATUS),Rd(REG.STATUS,{when:'drained'})],
+    src:[...items([16000,16000,16000,16000,16000,16000],[5]),...items([16000,16000,16000,16000,16000,16000],[5],34)],sink:[]})},
+ {id:'cfgerr',name:'Errors: bad config and SLVERR',desc:'ENABLE with NTAPS = 0 enters CFGERR. In that state a CFG write is refused (SLVERR), as are writes to unmapped addresses, coefficient indices at or above NTAPS_MAX, and reads of unmapped addresses; a write to a read-only register is accepted and ignored. Clearing CFG_ERR while ENABLE is still high fails: the condition re-asserts it every cycle.',
+  mk:o=>({ops:[W(REG.IRQ_EN,7),W(REG.CTRL,1),Rd(REG.STATUS),W(REG.IRQ_ST,4),Rd(REG.IRQ_ST),W(REG.CFG,cfgw(4,0,0,0)),W(0x0F0,1),Rd(0x300),W(CO(20),1),Rd(CO(20)),W(REG.ID,0x1234),Rd(REG.ID),W(REG.CTRL,0),Rd(REG.IRQ_ST),W(REG.IRQ_ST,4),Rd(REG.STATUS)],
+    src:[],sink:[],endWhen:'ops'})},
+ {id:'drain',name:'Dropping ENABLE mid-stream',desc:'ENABLE is cleared while samples are in flight. The FSM goes RUN → DRAIN and carries every admitted sample to the output before returning to IDLE; SAMPLE_CNT then equals the number of beats that left.',
+  mk:o=>({ops:[W(REG.CFG,cfgw(4,o.rnd,0,0)),...coefOps([8192,8192,8192,8192]),W(REG.CTRL,4),W(REG.CTRL,1),W(REG.CTRL,0,{adm:5}),Rd(REG.STATUS),Rd(REG.STATUS,{when:'idle'}),Rd(REG.SCNT),Rd(REG.FCNT)],
+    src:items([4000,4000,4000,4000,4000,4000,4000,4000,4000,4000,4000,4000],[11]),sink:[],endWhen:'ops'})},
+ {id:'flush',name:'Flush with samples in the pipeline',desc:'CTRL.FLUSH while samples are in flight and the sink is stalled. The input FIFO, delay line and pipeline are cleared, beats already in the output FIFO stay, and the credit counter is reloaded to OUT_FIFO_DEPTH minus what the output FIFO still holds. This is the case where the as-found RTL lost beats. A later CTRL.SOFT_RESET clears the pipeline the same way.',
+  mk:o=>({ops:[W(REG.CFG,cfgw(2,o.rnd,0,0)),...coefOps([16384,16384]),W(REG.CTRL,4),W(REG.CTRL,1),W(REG.CTRL,9,{adm:6}),Rd(REG.STATUS),W(REG.CTRL,3,{t:40}),Rd(REG.SCNT,{when:'drained'}),Rd(REG.FCNT)],
+    src:items([1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,11000,12000],[11]),sink:[[1,52,0]]})},
+];
+// stream source / sink process (the testbench idiom: wait a delay, raise VALID, hold until the partner signal is seen at an edge)
+function srcArm(x){ if(!x.q.length){x.sig=0;x.cur=null;x.cnt=-1;return;} x.cur=x.q.shift(); x.cnt=x.cur.d; x.sig=x.cnt===0?1:0; }
+const sinkReady=(M,c)=>{ for(const r of M.sc.sink) if(c>=r[0]&&c<=r[1]) return r[2]; return 1; };
+function mstReady(M,op,S,cyc){ if(cyc<(op.t||0)) return false; if(op.adm!==undefined&&M.n.adm<op.adm) return false; if(op.out!==undefined&&M.n.out<op.out) return false;
+  const srcEnd=M.sc.src.length===0||(M.src.open&&!M.src.cur&&M.src.q.length===0);
+  if(op.when==='satlast') return !!(S.out_valid&&S.out_sat&&S.dp===1&&srcEnd&&fEmpty(S.inf));   // issue so that the write lands on the cycle of the final saturation event
+  if(op.when==='tlastq') return !!(S.out_valid&&S.out_last&&(fEmpty(S.outf)||(fCnt(S.outf)===1&&sinkReady(M,cyc)))&&sinkReady(M,cyc+1)); // issue so that the commit pulse lands on the cycle the TLAST beat leaves
+  if(op.when==='drained'){ const srcDone=M.sc.src.length===0||(M.src.open&&!M.src.cur&&M.src.q.length===0);
+    return srcDone&&S.dp===0&&fEmpty(S.inf)&&fEmpty(S.outf)&&!S.busy&&S.ch_vld.every(v=>!v)&&!S.res_vld&&!S.out_valid; }
+  if(op.when==='idle') return S.state===0&&S.dp===0;
+  return true; }
+function mstLoad(M,cyc){
+  const m=M.mst; if(m.ph!=='gap'&&m.ph!=='start') return;
+  if(m.i>=M.sc.ops.length){ m.ph='end'; m.awv=m.wv=m.arv=m.bready=m.rready=0; return; }
+  if(m.timer>0){ m.timer--; return; }
+  const op=M.sc.ops[m.i];
+  if(!mstReady(M,op,M.S,cyc)) return;
+  m.ph='issue'; m.awdone=0; m.wdone=0; op.start=op.start||cyc;
+  if(op.k==='w'){ m.acnt=op.alate||0; m.wcnt=op.wlate||0; m.awv=m.acnt?0:1; m.wv=m.wcnt?0:1; m.bready=1; m.rready=0; m.arv=0; m.awa=op.a; m.wd=op.d; m.ws=op.s===undefined?15:op.s; }
+  else { m.arv=1; m.rready=1; m.bready=0; m.awv=0; m.wv=0; m.ara=op.a; }
+}
+const SIM={
+ scenarios:SC.map(s=>({id:s.id,name:s.name,desc:s.desc})),
+ options:[
+  {id:'mac',label:'MAC_UNITS',def:4,choices:[{v:1,label:'1'},{v:2,label:'2'},{v:4,label:'4'}],desc:v=>v===4?'II = ceil(N_eff / 4)':'II = ceil(N_eff / '+v+')'},
+  {id:'rnd',label:'Rounding',def:2,choices:[{v:0,label:'trunc'},{v:1,label:'half-up'},{v:2,label:'convergent'}],desc:v=>['floor','ties toward +inf','ties to even'][v]}],
+ chartTitle:'Sample timeline',rowLabel:'sample',chartWindow:64,maxCycles:400,preroll:3,
+ chartHint:'one row per stream sample · in = into input FIFO, q = waiting, A = admitted, P = fold pass, X M T Σ = operand reg, product, adder tree, fold add, R = round/sat, Q = output reg, o = output FIFO, O = popped',
+ reset(id,o){
+  const sc=SC.find(x=>x.id===id)||SC[0], P=mkP(o.mac||4), spec=sc.mk({rnd:o.rnd===undefined?2:o.rnd});
+  spec.src=spec.src||[]; spec.sink=spec.sink||[];
+  const M={sc:spec,P,S:mkS(P),mst:{i:0,ph:'start',timer:0,awv:0,wv:0,arv:0,bready:0,rready:0,awa:0,wd:0,ws:0,ara:0,awdone:0,wdone:0,acnt:0,wcnt:0},
+   src:{q:spec.src.map((s,i)=>({...s,id:i})),open:false,sig:0,cur:null,cnt:-1},txns:[],rows:{},n:{out:0,adm:0,sat:0,slverr:0},prev:null,rec:[],spec};
+  M.spec.src.forEach((s,i)=>{ const t={id:i,label:`x[${i}] = ${s.v}${s.last?'  (TLAST)':''}`,color:`var(--t${i%8})`,cells:{},notes:[],status:'waiting for the stream to start',sq:false}; M.txns.push(t); });
+  mstLoad(M,1);
+  return M;
+ },
+ eval(M){
+  const S=M.S, P=M.P, cyc=M.cyc, ms=M.mst;
+  const inp={awvalid:ms.awv,awaddr:ms.awv?ms.awa:0,wvalid:ms.wv,wdata:ms.wv?ms.wd:0,wstrb:ms.wv?ms.ws:0,bready:ms.bready,arvalid:ms.arv,araddr:ms.arv?ms.ara:0,rready:ms.rready,
+    tvalid:M.src.sig,tdata:M.src.sig&&M.src.cur?M.src.cur.v:0,tlast:M.src.sig&&M.src.cur?M.src.cur.last:0,tag:M.src.sig&&M.src.cur?M.src.cur.id:-1,tready:sinkReady(M,cyc)};
+  const {g,N}=fir_step(S,inp); const ev=[], act=new Set(), A=(...x)=>x.forEach(i=>act.add(i));
+  const sample_start=g.sample_start;
+  // ---- chart rows (display only)
+  const cell=(id,t,col,cls,title)=>{ if(id<0||!M.txns[id]) return; M.txns[id].cells[cyc]={t,col,cls:cls||'',title:title||''}; };
+  const note=(id,col,t,txt)=>{ if(id>=0&&M.txns[id]) M.txns[id].notes.push({c:cyc,t,col,txt}); };
+  for(let i=S.inf.rd,n=0;n<fCnt(S.inf);n++,i=(i+1)&(2*P.INF-1)){ const e=S.inf.mem[i&(P.INF-1)]; if(!e) continue; const adm=n===0&&sample_start;
+    if(adm){ cell(e.id,'A','--b2','','admitted: popped from the input FIFO, delay line shifts'); note(e.id,'--b2','A',`admitted (pop from input FIFO, delay line shifts once); ${g.n_pass} pass${g.n_pass===1?'':'es'} follow`); }
+    else { const why=n===0?(S.state!==1?'FSM not in RUN':!g.have_credit?'no credit':S.busy&&!g.last_pass?'pass phase running':''):'behind another sample'; cell(e.id,'q','--muted',n===0&&why?'st':'','waiting in the input FIFO'+(why?' ('+why+')':'')); if(n===0&&why) note(e.id,'--muted','q','waiting at the head of the input FIFO: '+why); } }
+  if(g.in_wr){ cell(inp.tag,'in','--b0','','written into the input FIFO'); note(inp.tag,'--b0','in',`TVALID and TREADY: pushed into the input FIFO (${g.in_cnt+1}/${P.INF})`); M.txns[inp.tag].status='in flight'; }
+  if(S.busy&&S.cur_tag>=0){ cell(S.cur_tag,'P'+S.pcnt,'--b2','',`pass ${S.pcnt} of ${g.n_pass}: taps ${g.tap_base}..${g.tap_base+P.MAC-1}`); note(S.cur_tag,'--b2','P'+S.pcnt,`pass ${S.pcnt}/${g.n_pass-1}: MAC units take taps ${g.tap_base}..${g.tap_base+P.MAC-1} (operands and coefficients selected this cycle)`); }
+  for(let i=0;i<P.DLY;i++) if(S.ch_vld[i]&&S.ch_last[i]&&S.ch_tag[i]>=0){ const t=i===0?'X':i===1?'M':i===P.DLY-1?'S':'T'; const nm={X:'operand and coefficient registers',M:'product registers',T:'adder tree level',S:'adder tree output, fold accumulate'}[t];
+    cell(S.ch_tag[i],t==='S'?'Σ':t,'--b3','',nm); note(S.ch_tag[i],'--b3',t==='S'?'Σ':t,'last pass: '+nm+(t==='S'?` (acc = ${g.acc_next})`:'')); }
+  if(S.res_vld){ cell(S.res_tag,'R','--b4','','round and saturate'); note(S.res_tag,'--b4','R',`round_sat: acc ${g.rs.floor} (+${g.rs.inc}) → ${g.rs.y}${g.rs.sat?'  SATURATED':''}`); }
+  if(S.out_valid){ cell(S.out_tag,'Q','--b4','','output register, pushed into the output FIFO this cycle'); note(S.out_tag,'--b4','Q',`output register: y = ${sx(S.out_data,16)}${S.out_sat?' (saturated)':''}, pushed into the output FIFO`); }
+  for(let i=S.outf.rd,n=0;n<fCnt(S.outf);n++,i=(i+1)&(2*P.OUTF-1)){ const e=S.outf.mem[i&(P.OUTF-1)]; if(!e) continue;
+    if(n===0&&g.out_pop){ cell(e.id,'O','--b1','','popped: m_axis handshake'); note(e.id,'--b1','O',`m_axis beat: y = ${sx(e.d,16)}${e.l?' TLAST':''}`); M.txns[e.id].status=`output ${sx(e.d,16)}`; }
+    else cell(e.id,'o','--b1',n===0?'st':'','waiting in the output FIFO'); }
+  // ---- events
+  const T=hx;
+  if(g.aw_hs) ev.push(['mem',`AW handshake ${regName(inp.awaddr)} (${T(inp.awaddr)})`]);
+  if(g.reg_wen){ const nm=regName(g.waddr); ev.push([g.reg_werr?'trap':'mem',`AXI-Lite write ${nm} ← ${T(g.wd)} → ${g.reg_werr?'SLVERR':'OKAY'}${g.reg_werr&&g.cfg_wr_blocked?' (CFG is read-only while busy)':g.reg_werr?' (unmapped)':g.w_is_ro&&g.w_csr_mapped?' (read-only: ignored)':''}`]); if(g.reg_werr) M.n.slverr++; }
+  if(g.ar_hs){ ev.push([g.rerr?'trap':'mem',`AXI-Lite read ${regName(inp.araddr)} → ${g.rerr?'SLVERR':T(g.rdata_comb)}`]); if(g.rerr) M.n.slverr++; }
+  if(g.coef_we) ev.push(['data',`coefficient bank: shadow[${g.w_idx}] ← ${sx(g.wd,16)} (bank ${S.bank_sel?0:1} is the shadow)`]);
+  if(S.c_commit) ev.push(['ctl','COEFF_COMMIT: bank swap pending until a frame boundary or idle']);
+  if(g.swap_now) ev.push(['ctl',`coefficient banks swap (${g.evt_frame_done?'TLAST beat left the IP':'FSM idle'}): bank ${S.bank_sel^1} is now active`]);
+  if(g.state_n!==S.state&&!g.soft_clear) ev.push([g.state_n===3?'trap':'ctl',`FSM ${STN[S.state]} → ${STN[g.state_n]}${S.state===0&&g.state_n===3?' (CFG illegal: NTAPS or rounding mode)':''}${S.state===1&&g.state_n===2?' (ENABLE dropped: draining admitted samples)':''}`]);
+  if(g.soft_clear) ev.push(['trap',`soft_clear (${S.c_flush?'FLUSH':'SOFT_RESET'}): input FIFO, delay line and pipeline cleared; credits ← ${g.reload} (OUT_FIFO_DEPTH − ${P.OUTF-g.reload} beats still in the output FIFO)`]);
+  if(sample_start) ev.push(['ctl',`admit sample ${g.inh.id} (${sx(g.inh.d,16)}${g.inh.l?', TLAST':''}): credit taken, delay line shifts; ${g.n_pass} pass${g.n_pass===1?'':'es'} of ${P.MAC} MAC${P.MAC===1?'':'s'}`]);
+  if(S.state===1&&g.in_tvalid&&!sample_start&&!g.have_credit) ev.push(['fwd','admission blocked: no credit (in_flight + output FIFO is full)']);
+  if(g.evt_sat){ ev.push(['trap',`output saturated: SAT_EVENT, STATUS.SAT sticky${(S.irq_en&2)?', irq asserted':''}`]); M.n.sat++; }
+  if(g.cfg_err_event&&!S.cfgerr_sticky) ev.push(['trap','CFG_ERR: ENABLE with an illegal CFG; sticky status set, interrupt raised']);
+  if(g.out_pop){ ev.push(['ret',`m_axis beat: y = ${sx(g.outh.d,16)}${g.outh.l?'  TLAST (frame done)':''}  [sample ${g.outh.id}]`]); M.n.out++; }
+  if(sample_start) M.n.adm++;
+  if(!g.s_tready&&inp.tvalid) ev.push(['info','input FIFO full: s_axis_tready low']);
+  // ---- active wires
+  const stRead=g.ar_hs&&g.r12===REG.STATUS;
+  if(inp.awvalid||inp.wvalid||inp.arvalid) A('E01'); if(S.bvalid||S.rvalid) A('E02'); if(g.reg_wen||g.reg_ren) A('E03','E04');
+  if(g.coef_we) A('E05'); if(S.pending||(g.ar_hs&&g.r12>=0x400)) A('E06'); if(S.c_commit) A('E07');
+  if(S.state!==0) A('E08'); if(S.busy) A('E09'); if(S.res_vld) A('E10'); if(g.irq) A('E11'); if(g.soft_clear) A('E12');
+  if(sample_start||stRead) A('E13'); if(stRead) A('E14'); if(g.evt_frame_done||fFull(S.outf)) A('E15'); if(g.evt_sat) A('E16');
+  if(inp.tvalid) A('E20','E21'); if(g.in_tvalid) A('E22'); if(sample_start) A('E23','E24','E25','E41');
+  if(S.busy) A('E26','E27','E28','E29'); if(S.ch_vld[0]) A('E30'); if(S.ch_vld[1]) A('E31'); if(g.acc_vld) A('E32','E33'); if(S.res_vld) A('E34');
+  if(S.out_valid) A('E35','E36'); if(g.out_tvalid) A('E37'); if(inp.tready&&g.out_tvalid) A('E38'); if(g.out_pop) A('E39'); if(S.state===1) A('E40');
+  if(g.evt_frame_done) A('E42'); if(S.pending) A('E43');
+  if(S.pending||g.coef_we) A('E50'); if(g.in_wr) A('E51'); if(S.res_vld) A('E52'); if(g.out_wr) A('E53');
+  // ---- display values
+  const vals={ctrl:STN[S.state],credit:`${S.credits}/${P.OUTF}`,infifo:`${g.in_cnt}/${P.INF}`,outfifo:`${g.out_cnt}/${P.OUTF}`,csr:(S.en?'ENABLE':'')+(g.irq?' IRQ':''),coef:`bank${S.bank_sel}${S.pending?' pending':''}`,
+    dl:`x[n]=${S.dl[0]}`,fold:S.busy||g.acc_vld?`acc ${g.acc_next}`:'',rs:S.res_vld?`y=${g.rs.y}`:'',chain:`P=${g.n_pass}`,prep:`pass ${S.busy?S.pcnt:'-'}/${g.n_pass-1}`};
+  const marks={}; if(S.state===3) marks.ctrl='trapped'; else if(S.state===1&&g.in_tvalid&&!sample_start) marks.ctrl='stalled'; if(!g.have_credit) marks.credit='stalled'; if(g.evt_sat) marks.rs='trapped'; if(g.irq) marks.irq='trapped'; if(fFull(S.outf)) marks.outfifo='stalled'; if(!g.s_tready) marks.infifo='stalled'; if(g.soft_clear) marks.csr='trapped';
+  const occ={H:inp.awvalid||inp.wvalid||inp.arvalid?`${ms.ph==='issue'?(M.sc.ops[ms.i].k==='w'?'write ':'read '):''}${regName(M.sc.ops[ms.i]?M.sc.ops[ms.i].a:0)}`:'idle',
+    C:`bank${S.bank_sel} active${S.pending?', commit pending':''}  ${S.en?'ENABLE':'disabled'}`,F:`${STN[S.state]}  credits ${S.credits}/${P.OUTF}`,
+    D:S.busy?`pass ${S.pcnt}/${g.n_pass-1}`:(g.acc_vld?'accumulating':'idle'),O:`FIFO ${g.out_cnt}/${P.OUTF}${g.out_pop?'  popping':''}`};
+  const chips=[['ENABLE',S.en,'ctl'],['stall: no credit',S.state===1&&g.in_tvalid&&!g.have_credit,'fwd'],['sample_start',sample_start,'ctl'],['soft_clear',g.soft_clear,'trap'],['irq',g.irq,'trap'],['SLVERR',S.bresp===2&&S.bvalid||S.rresp_q===2&&S.rvalid,'trap'],
+    ['s_tready',g.s_tready,'data'],['m_tvalid',g.out_tvalid,'data'],['m_tready',inp.tready,'data'],['out_pop',g.out_pop,'mem'],['pending',S.pending,'ctl'],['sat',g.evt_sat,'trap'],['frame_done',g.evt_frame_done,'ctl']];
+  // ---- done?
+  const opsDone=ms.ph==='end', pipeEmpty=S.dp===0&&fEmpty(S.outf)&&!S.busy&&!S.res_vld&&!S.out_valid;
+  const srcDone=M.src.open&&!M.src.cur&&M.src.q.length===0&&fEmpty(S.inf);
+  const done=opsDone&&pipeEmpty&&(M.sc.endWhen==='ops'||srcDone||M.spec.src.length===0);
+  const io={inp,out:[g.awready,g.wready,S.bvalid,S.bresp,g.arready,S.rvalid,S.rdata_q,S.rresp_q,g.s_tready,g.out_tvalid,g.out_tvalid?g.outh.d&0xffff:0,g.out_tvalid?g.outh.l:0,g.irq?1:0,S.credits,S.state,S.dp,g.in_cnt,g.out_cnt,S.bank_sel,S.pending,S.irq_st,S.scnt,S.fcnt]};
+  M.rec.push(io);
+  return {act:[...act],lit:['ctrl'],marks,vals,occ,chips,events:ev,done,doneText:'scenario complete',sig:{g,inp,N},io};
+ },
+ commit(M,R){
+  const {g,inp,N}=R.sig, ms=M.mst, cyc=M.cyc;
+  // AXI-Lite master process
+  if(ms.ph==='issue'){ const op=M.sc.ops[ms.i];
+    if(op.k==='w'){ if(g.aw_hs){ ms.awv=0; ms.awdone=1; } if(g.w_hs){ ms.wv=0; ms.wdone=1; }
+      if(!ms.awdone&&!ms.awv&&ms.acnt>0){ ms.acnt--; if(ms.acnt===0) ms.awv=1; }
+      if(!ms.wdone&&!ms.wv&&ms.wcnt>0){ ms.wcnt--; if(ms.wcnt===0) ms.wv=1; }
+      if(M.S.bvalid&&ms.bready){ op.res=M.S.bresp; op.done=true; ms.i++; ms.ph='gap'; ms.timer=1; ms.bready=0; } }
+    else { if(g.ar_hs){ ms.arv=0; } if(M.S.rvalid&&ms.rready){ op.res=M.S.rresp_q; op.val=M.S.rdata_q; op.done=true; ms.i++; ms.ph='gap'; ms.timer=1; ms.rready=0; } } }
+  // stream source: opens when ENABLE is first seen high
+  const src=M.src;
+  if(src.open){ if(src.sig&&g.s_tready){ src.sig=0; srcArm(src); } else if(src.cnt>0){ src.cnt--; if(src.cnt===0) src.sig=1; } }
+  M.prev={en:M.S.en,ntaps:M.S.ntaps,state:M.S.state,credits:M.S.credits};
+  M.S=N;
+  if(!src.open&&M.S.en){ src.open=true; srcArm(src); }
+  mstLoad(M,cyc+1);
+ },
+ stats(M){ return [['admitted',M.n.adm],['output beats',M.n.out],['credits',M.S.credits+' / '+M.P.OUTF]]; },
+ listing(M){
+  const out=[];
+  M.sc.ops.forEach((op,i)=>{ const st=op.done?(op.res===2?'SLVERR':'OKAY')+(op.k==='r'&&op.res!==2?' → '+hx(op.val):''):(i===M.mst.i&&M.mst.ph==='issue'?'in progress':'pending');
+    out.push({tx:null,badge:op.k==='w'?'W':'R',badgeCol:op.k==='w'?'--b1':'--b0',html:`${op.k==='w'?'write':'read '} ${regName(op.a)}${op.k==='w'?' ← '+hx(op.d):''} <span class="cm"># ${st}</span>`}); });
+  M.spec.src.forEach((s,i)=>out.push({tx:i,badge:'S',badgeCol:'--b2',html:`sample ${i}: ${s.v}${s.last?' TLAST':''} <span class="cm"># ${M.txns[i].status}</span>`}));
+  return out;
+ },
+ stateHTML(M,R){
+  const S=M.S, P=M.P, pv=M.prev||{}, reg=(n,v,ch)=>`<div class="reg${ch?' chg':''}"><span class="r">${n}</span><span class="v">${v}</span></div>`;
+  let h='<div class="regs">'+reg('FSM',STN[S.state],pv.state!==undefined&&pv.state!==S.state)+reg('credits',`${S.credits}/${P.OUTF}`,pv.credits!==undefined&&pv.credits!==S.credits)+reg('CTRL.ENABLE',S.en,pv.en!==undefined&&pv.en!==S.en)+reg('NTAPS',S.ntaps,pv.ntaps!==undefined&&pv.ntaps!==S.ntaps)
+   +reg('ROUND',['trunc','half-up','convergent','reserved'][S.round],false)+reg('SAT',S.sat?'symmetric':'asymmetric',false)+reg('SYM',S.sym,false)+reg('IRQ_STATUS','0b'+S.irq_st.toString(2).padStart(3,'0'),false)
+   +reg('IRQ_ENABLE','0b'+S.irq_en.toString(2).padStart(3,'0'),false)+reg('SAMPLE_CNT',S.scnt,false)+reg('FRAME_CNT',S.fcnt,false)+reg('active bank',S.bank_sel,false)+'</div>';
+  const act=S.bank_sel?S.bank1:S.bank0, sh=S.bank_sel?S.bank0:S.bank1, fmt=a=>a.map((v,i)=>v===null?null:`h[${i}]=${sx(v,16)}`).filter(Boolean).join('  ')||'(none written)';
+  h+=`<div class="small muted">active coefficients</div><div class="small mono">${fmt(act)}</div><div class="small muted">shadow coefficients</div><div class="small mono">${fmt(sh)}</div>`;
+  h+=`<div class="small muted">delay line x[n], x[n-1], …</div><div class="small mono">${S.dl.slice(0,Math.max(S.ntaps,2)).join(', ')}</div>`;
+  return h;
+ },
+};
+
+
+</script>
+<script>
+// ===================================================================================== engine (shared by every explorer)
+const NS='http://www.w3.org/2000/svg';
+const svg=document.getElementById('diagram');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function mk(tag,attrs={},parent){ const e=document.createElementNS(NS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); if(parent) parent.appendChild(e); return e; }
+const EMAP=Object.fromEntries(EDGES.map(e=>[e.id,e]));
+const occText={};
+function nodeName(id){ return NODES[id]?NODES[id].t:BARS[id]?BARS[id].t+' register':id; }
+function obj(id){ return NODES[id]||BARS[id]; }
+
+function buildMeta(){
+  const m=META;
+  document.getElementById('m-eyebrow').textContent=m.eyebrow;
+  document.getElementById('m-title').textContent=m.title;
+  document.getElementById('m-lede').textContent=m.lede;
+  document.getElementById('m-specs').innerHTML=m.specs.map(s=>`<span class="spec">${esc(s[0])} <b>${esc(s[1])}</b>${s[2]?' '+esc(s[2]):''}</span>`).join('');
+  document.getElementById('tab-sim').textContent=m.runLabel||'Run a scenario';
+  document.getElementById('sim-h').textContent=m.scenarioLabel||'Scenario';
+  document.getElementById('chart-h').textContent=SIM.chartTitle||'Timeline';
+  document.getElementById('chart-hint').textContent=SIM.chartHint||'';
+  const notes=document.getElementById('notes');
+  for(const n of m.notes||[]) notes.insertAdjacentHTML('beforeend',`<section class="sheet"><h2>${esc(n.h)}</h2><ul>${n.items.map(i=>`<li>${i}</li>`).join('')}</ul></section>`);
+  if(m.figures) notes.insertAdjacentHTML('beforeend',`<section class="sheet"><h2>${esc(m.figuresTitle||'Measured results')}</h2><div class="figs">${m.figures.map(f=>`<div class="fig"><div class="k">${esc(f.k)}</div><div class="v">${esc(f.v)}</div><div class="s">${esc(f.s)}</div></div>`).join('')}</div></section>`);
+  if(m.foot) document.getElementById('foot').innerHTML=m.foot;
+  svg.setAttribute('viewBox',`0 0 ${VIEW.w} ${VIEW.h}`);
+  svg.setAttribute('aria-label',m.diagramLabel||m.title);
+}
+
+function build(){
+  const defs=mk('defs',{},svg);
+  const pat=mk('pattern',{id:'dots',width:16,height:16,patternUnits:'userSpaceOnUse'},defs); mk('circle',{cx:1,cy:1,r:.9,class:'dotgrid'},pat);
+  for(const t of Object.keys(TYPES)){ const m=mk('marker',{id:'ar-'+t,viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:7,markerHeight:7,orient:'auto-start-reverse'},defs); mk('path',{d:'M0 0L10 5L0 10z',class:'mk-'+t},m); }
+  mk('rect',{x:0,y:0,width:VIEW.w,height:VIEW.h,fill:'url(#dots)'},svg);
+  const gb=mk('g',{},svg);
+  for(const s of BANDS){
+    mk('rect',{x:s.x,y:12,width:s.w,height:VIEW.bandH,class:'band',rx:4,opacity:.55},gb);
+    mk('rect',{x:s.x,y:12,width:s.w,height:4,fill:`var(${s.c})`,rx:2},gb);
+    const t=mk('text',{x:s.x+10,y:36,class:'bandlbl',fill:`var(${s.c})`},gb); t.textContent=s.n;
+    const o=mk('text',{x:s.x+10,y:55,class:'occ'},gb); o.textContent=''; occText[s.k]=o;
+  }
+  if(VIEW.boundary){ const b=VIEW.boundary; mk('rect',{x:b.x,y:b.y,width:b.w,height:b.h,class:'boundary',rx:6},gb);
+    const l=mk('text',{x:b.x+b.w-6,y:b.y+b.h-6,class:'boundlbl','text-anchor':'end'},gb); l.textContent=b.label; }
+  if(VIEW.outsideLabel){ const l=mk('text',{x:VIEW.w-12,y:VIEW.h-4,class:'boundlbl','text-anchor':'end'},gb); l.textContent=VIEW.outsideLabel; }
+  const ge=mk('g',{id:'edges'},svg);
+  for(const e of EDGES){
+    const g=mk('g',{class:'edge t-'+e.type,'data-id':e.id},ge);
+    const d='M'+e.pts.map(p=>p.join(' ')).join(' L');
+    e.path=mk('path',{d,class:'ln','marker-end':`url(#ar-${e.type})`},g);
+    mk('path',{d,class:'hit'},g);
+    e.g=g; e.len=e.path.getTotalLength();
+    g.addEventListener('mouseenter',ev=>showTip(ev,`<b>${esc(e.label)}</b><br><span class="muted">${esc(nodeName(e.from))} → ${esc(nodeName(e.to))} · ${esc(TYPES[e.type])}</span>${e.desc?'<br>'+esc(e.desc):''}`));
+    g.addEventListener('mousemove',moveTip); g.addEventListener('mouseleave',hideTip);
+    g.addEventListener('click',()=>inspectEdge(e.id));
+  }
+  const gbar=mk('g',{},svg);
+  for(const [id,b] of Object.entries(BARS)){
+    const y=b.y??VIEW.barY, h=b.h??VIEW.barH;
+    const g=mk('g',{class:'bar','data-id':id,tabindex:0,role:'button','aria-label':b.t+' register'},gbar);
+    mk('rect',{x:b.x,y,width:18,height:h,rx:3,class:'reg'},g);
+    const cy=y+h/2; const t=mk('text',{x:b.x+13,y:cy,transform:`rotate(-90 ${b.x+13} ${cy})`,'text-anchor':'middle'},g); t.textContent=b.t+(b.noSuffix?'':' register');
+    b.g=g; g.addEventListener('click',()=>inspectNode(id)); g.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();inspectNode(id);}});
+  }
+  const gn=mk('g',{},svg);
+  for(const [id,n] of Object.entries(NODES)){
+    const g=mk('g',{class:'node'+(n.ext?' ext':'')+(n.ver?' ver':''),'data-id':id,tabindex:0,role:'button','aria-label':n.t},gn);
+    mk('rect',{x:n.x,y:n.y,width:n.w,height:n.h,rx:5,class:'box'},g);
+    let y=n.y+19; const t=mk('text',{x:n.x+10,y,class:'nt'},g); t.textContent=n.t;
+    y+=15; const s=mk('text',{x:n.x+10,y,class:'ns'},g); s.textContent=n.s;
+    for(const l of (n.l||[])){ y+=14; if(y>n.y+n.h-6) break; const tl=mk('text',{x:n.x+10,y,class:'nl'},g); tl.textContent=l; }
+    n.val=mk('text',{x:n.x+n.w-8,y:n.y+19,class:'nv','text-anchor':'end'},g);
+    n.g=g; g.addEventListener('click',()=>inspectNode(id)); g.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();inspectNode(id);}});
+  }
+  mk('g',{id:'labels'},svg);
+  mk('g',{id:'particles'},svg);
+}
+const tip=document.getElementById('tip');
+function showTip(ev,html){ tip.innerHTML=html; tip.hidden=false; moveTip(ev); }
+function moveTip(ev){ const x=Math.min(ev.clientX+14,window.innerWidth-tip.offsetWidth-8), y=Math.min(ev.clientY+14,window.innerHeight-tip.offsetHeight-8); tip.style.left=x+'px'; tip.style.top=y+'px'; }
+function hideTip(){ tip.hidden=true; }
+
+const hiddenTypes=new Set();
+function buildLegend(){
+  const lg=document.getElementById('legend');
+  for(const [t,name] of Object.entries(TYPES)){
+    if(!EDGES.some(e=>e.type===t)) continue;
+    const b=document.createElement('button'); b.className='lg'; b.setAttribute('aria-pressed','true');
+    b.innerHTML=`<svg viewBox="0 0 30 10"><g class="edge t-${t}"><path class="ln" d="M1 5 L24 5" marker-end="url(#ar-${t})"/></g></svg>${esc(name)}`;
+    b.onclick=()=>{ const on=b.getAttribute('aria-pressed')==='true'; b.setAttribute('aria-pressed',on?'false':'true'); on?hiddenTypes.add(t):hiddenTypes.delete(t); applyHidden(); };
+    lg.appendChild(b);
+  }
+  if(Object.keys(BARS).length){ const reg=document.createElement('span'); reg.className='lg'; reg.style.cursor='default';
+    reg.innerHTML=`<svg viewBox="0 0 30 10"><rect x="11" y="0" width="8" height="10" rx="1.5" fill="var(--surface-2)" stroke="var(--ink)" stroke-opacity=".5"/></svg>${esc(META.barLegend||'Register (posedge clk)')}`; lg.appendChild(reg); }
+  const n=document.createElement('span'); n.className='note'; n.textContent='Hover a wire for its signals'; lg.appendChild(n);
+}
+function applyHidden(){ for(const e of EDGES) e.g.classList.toggle('hidden',hiddenTypes.has(e.type)); rebuildParticles(); }
+
+// ---------------------------------------------------------------------------------- inspector
+const inspSlot=document.getElementById('insp-slot');
+let selNode=null;
+function li(arr){ return arr&&arr.length?'<ul>'+arr.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul>':'<span class="muted">—</span>'; }
+function inspectNode(id){
+  const n=obj(id); if(!n) return;
+  if(selNode) obj(selNode).g.classList.remove('sel');
+  selNode=id; n.g.classList.add('sel');
+  const ins=EDGES.filter(e=>e.to===id), outs=EDGES.filter(e=>e.from===id);
+  const conn=(arr,dir)=>arr.length?'<ul>'+arr.map(e=>`<li><a href="#" data-e="${e.id}" class="mono" style="color:var(--${e.type})">${esc(e.label)}</a> <span class="muted small">${dir} ${esc(nodeName(dir==='from'?e.from:e.to))}</span></li>`).join('')+'</ul>':'<span class="muted">—</span>';
+  const isBar=!!BARS[id]; const band=BANDS.find(b=>b.k===n.stage);
+  inspSlot.innerHTML=`<div class="insp" role="region" aria-label="Inspector">
+    <div class="ih"><div><div class="eyebrow">${isBar?'register':(band?esc(band.n):'outside the design')}</div><h3>${esc(nodeName(id))}</h3><div class="file">${esc(n.file||'')}</div></div><button class="x" aria-label="Close inspector">×</button></div>
+    <p class="small">${esc(n.role||'')}</p>
+    <dl class="kv">
+      <dt>Does</dt><dd>${li(n.resp)}</dd>
+      ${n.in?`<dt>Inputs</dt><dd>${li(n.in)}</dd>`:''}${n.out?`<dt>Outputs</dt><dd>${li(n.out)}</dd>`:''}${n.deps?`<dt>Depends on</dt><dd>${li(n.deps)}</dd>`:''}
+      <dt>Wires in</dt><dd>${conn(ins,'from')}</dd>
+      <dt>Wires out</dt><dd>${conn(outs,'to')}</dd>
+    </dl>
+    ${n.code?`<pre class="code">${esc(n.code)}</pre>`:''}</div>`;
+  inspSlot.querySelector('.x').onclick=closeInspector;
+  inspSlot.querySelectorAll('a[data-e]').forEach(a=>a.onclick=ev=>{ev.preventDefault();inspectEdge(a.dataset.e);});
+  if(mode==='explore') focusNode(id);
+  document.getElementById('panel').scrollTop=0;
+}
+function inspectEdge(eid){
+  const e=EMAP[eid];
+  if(selNode){ obj(selNode).g.classList.remove('sel'); selNode=null; }
+  inspSlot.innerHTML=`<div class="insp" role="region" aria-label="Inspector">
+    <div class="ih"><div><div class="eyebrow">wire · ${esc(TYPES[e.type])}</div><h3 class="mono" style="font-size:14px">${esc(e.label)}</h3></div><button class="x" aria-label="Close inspector">×</button></div>
+    <dl class="kv"><dt>From</dt><dd><a href="#" data-n="${e.from}">${esc(nodeName(e.from))}</a></dd><dt>To</dt><dd><a href="#" data-n="${e.to}">${esc(nodeName(e.to))}</a></dd>
+    ${e.desc?`<dt>Meaning</dt><dd>${esc(e.desc)}</dd>`:''}
+    <dt>Used in</dt><dd>${li(PATHS.filter(p=>p.steps.some(s=>s[0]===eid)).map(p=>p.name))}</dd></dl></div>`;
+  inspSlot.querySelector('.x').onclick=closeInspector;
+  inspSlot.querySelectorAll('a[data-n]').forEach(a=>a.onclick=ev=>{ev.preventDefault();inspectNode(a.dataset.n);});
+  if(mode==='explore') focusEdges([eid],[e.from,e.to]);
+}
+function closeInspector(){ inspSlot.innerHTML=''; if(selNode){obj(selNode).g.classList.remove('sel'); selNode=null;} if(mode==='explore') clearFocus(); }
+
+function clearOn(){ svg.querySelectorAll('.on').forEach(x=>x.classList.remove('on')); }
+function clearFocus(){ svg.classList.remove('focus'); clearOn(); clearLabels(); rebuildParticles(); }
+function focusNode(id){ const es=EDGES.filter(e=>e.from===id||e.to===id).map(e=>e.id); const ns=new Set([id]); es.forEach(x=>{ns.add(EMAP[x].from);ns.add(EMAP[x].to);}); focusEdges(es,[...ns]); }
+function focusEdges(eids,nids){ svg.classList.add('focus'); clearOn(); eids.forEach(x=>EMAP[x].g.classList.add('on')); nids.forEach(n=>obj(n)?.g.classList.add('on')); drawLabels(eids); rebuildParticles(eids); }
+function clearLabels(){ document.getElementById('labels').innerHTML=''; }
+function drawLabels(eids){
+  clearLabels(); const gl=document.getElementById('labels');
+  for(const id of eids){ const e=EMAP[id]; if(hiddenTypes.has(e.type)) continue;
+    let best=0,bi=0; for(let i=0;i<e.pts.length-1;i++){ const L=Math.hypot(e.pts[i+1][0]-e.pts[i][0],e.pts[i+1][1]-e.pts[i][1]); if(L>best){best=L;bi=i;} }
+    const [a,b]=[e.pts[bi],e.pts[bi+1]]; const x=(a[0]+b[0])/2, y=(a[1]+b[1])/2;
+    const g=mk('g',{class:'elbl'},gl); const t=mk('text',{x,y:y+3.5,'text-anchor':'middle'},g); t.textContent=e.label;
+    const bb=t.getBBox(); const r=mk('rect',{x:bb.x-4,y:bb.y-2,width:bb.width+8,height:bb.height+4,rx:3}); g.insertBefore(r,t);
+  }
+}
+
+// ---------------------------------------------------------------------------------- animation
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let mode='sim', playing=!reduce, speed=1, last=performance.now(), T=0, pl=null, parts=[];
+function rebuildParticles(only){
+  pl.innerHTML=''; parts=[];
+  if(mode!=='explore') return;
+  const list=(only&&only.length)?only.map(x=>EMAP[x]):EDGES;
+  for(const e of list){ if(hiddenTypes.has(e.type)) continue;
+    const n=Math.max(1,Math.round(e.len/150));
+    for(let i=0;i<n;i++){ const c=mk('circle',{r:3,class:'p-'+e.type},pl); parts.push({e,c,off:i/n}); } }
+}
+function placeAt(c,e,u){ const p=e.path.getPointAtLength(Math.max(0,Math.min(1,u))*e.len); c.setAttribute('cx',p.x); c.setAttribute('cy',p.y); }
+function frame(now){
+  const dt=Math.min(.1,(now-last)/1000); last=now;
+  if(playing){ T+=dt*speed; if(mode==='sim') simTick(dt*speed); else if(mode==='path') pathTick(dt*speed); }
+  if(mode==='explore'){ for(const p of parts){ const u=((T*55/p.e.len)+p.off)%1; placeAt(p.c,p.e,u); } }
+  requestAnimationFrame(frame);
+}
+function train(eids,u){
+  pl.innerHTML='';
+  for(const id of eids){ const e=EMAP[id]; if(!e||hiddenTypes.has(e.type)) continue;
+    const n=e.len>260?3:e.len>90?2:1;
+    for(let i=0;i<n;i++){ const uu=u-i*0.09; if(uu<0||uu>1) continue; const c=mk('circle',{r:i===0?4:3,class:'p-'+e.type,opacity:1-i*.28},pl); placeAt(c,e,uu); } }
+}
+
+// ---------------------------------------------------------------------------------- path mode
+let curPath=null, pstep=0, pphase=0;
+function buildPathList(){
+  const box=document.getElementById('pathlist'); box.innerHTML='';
+  for(const g of [...new Set(PATHS.map(p=>p.g))]){ const d=document.createElement('div'); d.className='pgroup'; d.innerHTML=`<div class="gl">${esc(g)}</div>`;
+    for(const p of PATHS.filter(p=>p.g===g)){ const b=document.createElement('button'); b.className='pbtn'; b.textContent=p.name; b.dataset.id=p.id; b.setAttribute('aria-pressed','false'); b.title=p.desc||''; b.onclick=()=>selectPath(p.id); d.appendChild(b); }
+    box.appendChild(d); }
+}
+function selectPath(id){
+  curPath=PATHS.find(p=>p.id===id); pstep=0; pphase=0;
+  document.querySelectorAll('#pathlist .pbtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.id===id?'true':'false'));
+  const ol=document.getElementById('steps'); ol.innerHTML='';
+  curPath.steps.forEach((s,i)=>{ const li=document.createElement('li'); li.textContent=s[1]; li.onclick=()=>{pstep=i;pphase=0;renderPath();}; ol.appendChild(li); });
+  renderPath();
+}
+function renderPath(){
+  if(!curPath) return;
+  const st=curPath.steps[pstep], k=st[0];
+  const eids=[...new Set(curPath.steps.slice(0,pstep+1).map(s=>s[0]).filter(x=>!x.startsWith('n:')))];
+  const nids=new Set(); eids.forEach(x=>{nids.add(EMAP[x].from);nids.add(EMAP[x].to);});
+  curPath.steps.slice(0,pstep+1).forEach(s=>{ if(s[0].startsWith('n:')) nids.add(s[0].slice(2)); });
+  svg.classList.add('focus'); clearOn(); eids.forEach(x=>EMAP[x].g.classList.add('on')); nids.forEach(n=>obj(n)?.g.classList.add('on'));
+  svg.querySelectorAll('.live').forEach(x=>x.classList.remove('live'));
+  if(k.startsWith('n:')) obj(k.slice(2)).g.classList.add('live'); else obj(EMAP[k].to)?.g.classList.add('live');
+  drawLabels(k.startsWith('n:')?[]:[k]);
+  document.getElementById('caption').innerHTML=`<b>${pstep+1} / ${curPath.steps.length}</b> · ${esc(st[1])}`;
+  document.querySelectorAll('#steps li').forEach((li,i)=>{ li.className=i<pstep?'done':i===pstep?'cur':''; });
+  const cur=document.querySelector('#steps li.cur'); const p=document.getElementById('panel');
+  if(cur&&mode==='path'){ const r=cur.getBoundingClientRect(), pr=p.getBoundingClientRect(); if(r.bottom>pr.bottom||r.top<pr.top) p.scrollTop+=r.top-pr.top-pr.height/2; }
+  if(!k.startsWith('n:')) train([k],0); else pl.innerHTML='';
+}
+function pathTick(dt){
+  if(!curPath) return;
+  pphase+=dt/1.5; const k=curPath.steps[pstep][0];
+  if(!k.startsWith('n:')) train([k],Math.min(1.2,pphase*1.15));
+  if(pphase>=1){ pphase=0; if(pstep<curPath.steps.length-1){ pstep++; renderPath(); } else { pphase=-0.8; pstep=0; renderPath(); } }
+}
+
+// ---------------------------------------------------------------------------------- run mode
+let M=null, R=null, simPhase=0, done=false, logRows=[], trackTx=null, opts={};
+function simReset(){
+  const sc=document.getElementById('scenario').value;
+  M=SIM.reset(sc,opts); M.cyc=0; M.txns=M.txns||[]; done=false; logRows=[]; trackTx=null; simPhase=0;
+  document.getElementById('scen-desc').textContent=(SIM.scenarios.find(s=>s.id===sc)||{}).desc||'';
+  enterCycle();
+}
+function enterCycle(){
+  M.cyc++; R=SIM.eval(M);
+  (R.events||[]).forEach(e=>logRows.unshift([M.cyc,e[0],e[1]]));
+  if(R.done){ done=true; logRows.unshift([M.cyc,'info',R.doneText||'scenario complete']); }
+  paintCycle();
+}
+function paintCycle(){
+  document.getElementById('cyc-n').textContent=M.cyc;
+  const act=R.act||[];
+  svg.classList.add('focus'); clearOn(); clearLabels();
+  act.forEach(id=>EMAP[id]?.g.classList.add('on'));
+  const nids=new Set(); act.forEach(id=>{ if(EMAP[id]){ nids.add(EMAP[id].from); nids.add(EMAP[id].to);} });
+  (R.lit||[]).forEach(n=>nids.add(n));
+  nids.forEach(n=>obj(n)?.g.classList.add('on'));
+  svg.querySelectorAll('.trapped,.stalled,.flushed,.held,.live').forEach(x=>x.classList.remove('trapped','stalled','flushed','held','live'));
+  for(const [n,c] of Object.entries(R.marks||{})) obj(n)?.g.classList.add(c);
+  for(const n of Object.values(NODES)) n.val.textContent='';
+  for(const [n,v] of Object.entries(R.vals||{})) if(NODES[n]) NODES[n].val.textContent=v;
+  for(const b of BANDS){ const o=occText[b.k]; const v=(R.occ||{})[b.k]; o.textContent=v||''; o.classList.toggle('live',!!v); }
+  document.getElementById('sigchips').innerHTML=(R.chips||[]).map(c=>`<span class="chip c-${c[2]}${c[1]?' on':''}">${esc(c[0])}</span>`).join('');
+  document.getElementById('stats').innerHTML=SIM.stats(M).map(s=>`<div class="stat"><div class="k">${esc(s[0])}</div><div class="v">${esc(s[1])}</div></div>`).join('');
+  renderListing(); renderChart(); renderLog(); renderJourney();
+  document.getElementById('state').innerHTML=SIM.stateHTML(M,R);
+}
+function commitCycle(){
+  for(const id of (R.pulse||Object.keys(BARS))){ const b=BARS[id]; if(!b) continue; b.g.classList.add('pulse'); setTimeout(()=>b.g.classList.remove('pulse'),Math.max(120,260/speed)); }
+  SIM.commit(M,R); enterCycle();
+}
+function simTick(dt){
+  if(done){ pl.innerHTML=''; return; }
+  simPhase+=dt/1.7; train(R.act||[],Math.min(1,simPhase/0.78));
+  if(simPhase>=1){ simPhase=0; if(M.cyc>=(SIM.maxCycles||400)){done=true;return;} commitCycle(); }
+}
+function simStep(){ if(done) return; simPhase=0; commitCycle(); train(R.act||[],0); }
+function renderListing(){
+  const box=document.getElementById('listing'); const items=SIM.listing?SIM.listing(M,R):[];
+  box.hidden=!items.length;
+  box.innerHTML=items.map(it=>`<div class="ln${it.tx!=null&&it.tx===trackTx?' sel':''}" ${it.tx!=null?`data-tx="${it.tx}"`:''}><span class="stg" style="background:${it.badge?`var(${it.badgeCol||'--accent'})`:'transparent'}">${esc(it.badge||'')}</span><span>${it.html}</span></div>`).join('');
+  box.querySelectorAll('[data-tx]').forEach(d=>d.onclick=()=>{ trackTx=+d.dataset.tx; renderListing(); renderChart(); renderJourney(); });
+}
+function renderChart(){
+  const tb=document.getElementById('chart'); const maxC=Math.max(M.cyc,14); const first=Math.max(1,maxC-(SIM.chartWindow||80)+1);
+  let h=`<thead><tr><th class="ins">${esc(SIM.rowLabel||'item')}</th>`; for(let c=first;c<=maxC;c++) h+=`<th${c===M.cyc?' style="color:var(--ink)"':''}>${c}</th>`; h+='</tr></thead><tbody>';
+  for(const t of M.txns){
+    h+=`<tr data-t="${t.id}" class="${trackTx===t.id?'sel':''} ${t.sq?'squashed':''}"><th class="ins" title="${esc(t.label)}"><span style="color:${t.color}">●</span> ${esc(t.label)}</th>`;
+    for(let c=first;c<=maxC;c++){ const v=t.cells[c]; h+=`<td class="${c===M.cyc?'cur':''}">${v?`<span class="cell${v.cls?' '+v.cls:''}" style="background:var(${v.col||'--accent'})" title="${esc(v.title||'')}">${esc(v.t)}</span>`:''}</td>`; }
+    h+='</tr>'; }
+  tb.innerHTML=h+'</tbody>';
+  tb.querySelectorAll('tbody tr').forEach(tr=>tr.querySelector('th').onclick=()=>{ trackTx=+tr.dataset.t; renderListing(); renderChart(); renderJourney(); });
+  const w=document.getElementById('chartwrap'); w.scrollLeft=w.scrollWidth;
+}
+function renderJourney(){
+  const box=document.getElementById('journey'), hint=document.getElementById('journey-hint');
+  const t=M.txns.find(x=>x.id===trackTx);
+  if(!t){ box.innerHTML=''; hint.hidden=false; return; } hint.hidden=true;
+  box.innerHTML=`<div class="small"><span style="color:${t.color}">●</span> <b class="mono">${esc(t.label)}</b> <span class="muted">${esc(t.status||'')}</span></div>`+
+    t.notes.map(n=>`<div class="j"><span class="c">C${n.c}</span><span class="s" style="background:var(${n.col||'--accent'})">${esc(n.t)}</span><span>${esc(n.txt)}</span></div>`).join('');
+}
+function renderLog(){ document.getElementById('log').innerHTML=logRows.slice(0,160).map(r=>`<div class="e k-${r[1]}"><span class="c">C${r[0]}</span><span>${esc(r[2])}</span></div>`).join('')||'<span class="small muted">Events appear as the scenario runs.</span>'; }
+
+function buildModList(){
+  const box=document.getElementById('modlist');
+  for(const [g,ids] of GROUPS){ const d=document.createElement('div'); d.className='pgroup'; d.innerHTML=`<div class="gl">${esc(g)}</div>`;
+    for(const id of ids){ const b=document.createElement('button'); b.className='pbtn'; b.textContent=nodeName(id); b.onclick=()=>inspectNode(id); d.appendChild(b); } box.appendChild(d); }
+}
+function buildOptions(){
+  const box=document.getElementById('opts');
+  for(const o of SIM.options||[]){
+    opts[o.id]=o.def;
+    const row=document.createElement('div'); row.className='row small';
+    row.innerHTML=`<span class="muted">${esc(o.label)}</span><div class="seg" role="group" aria-label="${esc(o.label)}">${o.choices.map(c=>`<button data-v="${c.v}" aria-pressed="${c.v===o.def}">${esc(c.label)}</button>`).join('')}</div><span class="muted" data-desc></span>`;
+    const setDesc=()=>row.querySelector('[data-desc]').textContent=o.desc?o.desc(opts[o.id]):'';
+    row.querySelectorAll('button').forEach(b=>b.onclick=()=>{ const v=isNaN(+b.dataset.v)?b.dataset.v:+b.dataset.v; opts[o.id]=v; row.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false')); setDesc(); simReset(); });
+    setDesc(); box.appendChild(row);
+  }
+}
+function setMode(m){
+  mode=m; document.body.dataset.mode=m;
+  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.mode===m?'true':'false'));
+  clearLabels(); pl.innerHTML=''; svg.querySelectorAll('.trapped,.stalled,.flushed,.held,.live').forEach(x=>x.classList.remove('trapped','stalled','flushed','held','live'));
+  for(const k of Object.keys(occText)){ occText[k].textContent=''; occText[k].classList.remove('live'); }
+  for(const n of Object.values(NODES)) n.val.textContent='';
+  document.getElementById('btn-step').disabled=(m==='explore');
+  if(m==='explore'){ clearFocus(); if(selNode) focusNode(selNode); }
+  if(m==='path'){ if(!curPath) selectPath(PATHS[0].id); else renderPath(); }
+  if(m==='sim') paintCycle();
+}
+function setPlaying(p){ playing=p; document.getElementById('lbl-play').textContent=p?'Pause':'Play'; document.getElementById('btn-play').setAttribute('aria-label',p?'Pause':'Play');
+  document.getElementById('ico-play').innerHTML=p?'<rect x="3" y="2" width="3.5" height="12"/><rect x="9.5" y="2" width="3.5" height="12"/>':'<path d="M3 2l11 6-11 6z"/>'; }
+
+buildMeta(); build(); pl=document.getElementById('particles'); buildLegend(); buildPathList(); buildModList();
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
+document.getElementById('btn-play').onclick=()=>{ if(mode==='sim'&&done&&!playing) simReset(); setPlaying(!playing); };
+document.getElementById('btn-step').onclick=()=>{ setPlaying(false); if(mode==='sim') simStep(); else if(mode==='path'&&curPath){ pstep=(pstep+1)%curPath.steps.length; pphase=0; renderPath(); } };
+document.getElementById('btn-restart').onclick=()=>{ if(mode==='sim') simReset(); else if(mode==='path'&&curPath){ pstep=0; pphase=0; renderPath(); } else T=0; };
+const sp=document.getElementById('speed'); sp.oninput=()=>{ speed=Math.pow(2,+sp.value); document.getElementById('speed-out').textContent=speed.toFixed(2)+'×'; };
+document.addEventListener('keydown',ev=>{ if(ev.target.closest('input,select,textarea')) return;
+  if(ev.key===' '&&!ev.target.closest('button,[role=button]')){ ev.preventDefault(); document.getElementById('btn-play').click(); }
+  if(ev.key==='ArrowRight') document.getElementById('btn-step').click();
+  if(ev.key==='Escape') closeInspector(); });
+const scSel=document.getElementById('scenario'); SIM.scenarios.forEach(s=>{ const o=document.createElement('option'); o.value=s.id; o.textContent=s.name; scSel.appendChild(o); });
+scSel.onchange=()=>{ simReset(); setPlaying(!reduce); };
+buildOptions();
+document.body.dataset.mode='sim';
+simReset();
+for(let i=0;i<(SIM.preroll||0)&&!done;i++){ SIM.commit(M,R); enterCycle(); }
+setPlaying(playing);
+requestAnimationFrame(t=>{last=t;frame(t);});
+</script>
+</body>
+</html>
